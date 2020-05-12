@@ -1,38 +1,35 @@
-# Hugo variables
-#
-baseurl = "https://blog.rie.icu/"
+baseurl = "https://example.com/"
 languageCode = "en-us"
-title = "blog"
-theme = "tufte"
-# number of posts to show on home/category/tag pages (Default: 10)
+theme = "terminal"
 paginate = 5
-# optionally override the site's footer with custom copyright text
-# copyright = "Except where otherwise noted, content on this site is licensed under a [Creative Commons Attribution 4.0 International license](https://creativecommons.org/licenses/by-sa/4.0/)."
-#googleAnalytics = "UA-123-45"
-#disqusShortname = "XYW"
 
-[permalinks]
-  post = "/:year/:month/:title/"
-  page = "/:slug/"
-
-# Theme variables
-#
 [params]
-  # Site author
-  author = "xdrie"
+  contentTypeName = "post"
+  themeColor = "pink"
+  showMenuItems = 2
+  fullWidthTheme = false
+  centerTheme = true
 
-  # Description/subtitle for homepage (can be Markdown)
-  description = "a simple blog"
+[languages]
+  [languages.en]
+    title = "blog"
+    subtitle = "my simple blog"
+    keywords = ""
+    copyright = ""
+    menuMore = "Show more"
+    readMore = "Read more"
+    readOtherPosts = "Read other posts"
 
-  # Format dates with Go's time formatting
-  date_format = "Mon Jan 02, 2006"
+    [languages.en.params.logo]
+      logoText = "Terminal"
+      logoHomeLink = "/"
 
-# Default content language for Hugo 0.17's multilingual support (default is "en")
-# See: https://github.com/spf13/hugo/blob/master/docs/content/content/multilingual.md
-#DefaultContentLanguage = "en"
-
-# Languages to render
-#[languages.en]
-#[languages.bg]
-
-# vim: ts=2 sw=2 et
+    [languages.en.menu]
+      [[languages.en.menu.main]]
+        identifier = "about"
+        name = "About"
+        url = "/about"
+      [[languages.en.menu.main]]
+        identifier = "showcase"
+        name = "Showcase"
+        url = "/showcase"
