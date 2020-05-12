@@ -14,11 +14,11 @@ paginate = 5
   [languages.en]
     title = "rie blog"
     subtitle = "some notes"
-    keywords = ""
-    copyright = ""
-    menuMore = "Show more"
-    readMore = "Read more"
-    readOtherPosts = "Read other posts"
+    keywords = "development linux blog"
+    copyright = "© 2019-2020, rie."
+    menuMore = "show more"
+    readMore = "read more"
+    readOtherPosts = "other posts"
 
     [languages.en.params.logo]
       logoText = "rie"
