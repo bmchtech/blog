@@ -1,4 +1,4 @@
-baseurl = "https://blog.rie.icu/"
+baseurl = "/"
 languageCode = "en-us"
 theme = "terminal"
 paginate = 5
