@@ -12,8 +12,8 @@ paginate = 5
 
 [languages]
   [languages.en]
-    title = "blog"
-    subtitle = "my simple blog"
+    title = "rie blog"
+    subtitle = "some notes"
     keywords = ""
     copyright = ""
     menuMore = "Show more"
