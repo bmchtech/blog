@@ -1,0 +1,148 @@
+#+TITLE: linux tips
+#+SUBTITLE: quick reference for common things i need to do
+#+DATE: 2020-04-09
+#+TAGS[]: ref
+
+a wip collection of notes and tips on random things i end up needing to do with my system.
+i expand it as i encounter new tasks, and hopefully i can consult it instead of looking things up next time.
+
+* SSH
+** ssh config file
+put the config file in ~~/.ssh/config~.
+now, hosts can be referenced simply by a short name, and all port and user configuration can be managed from this file.
+*** example
+#+begin_src 
+Host host-name
+  Hostname x.x.x.x
+  User user
+  IdentityFile ~/.ssh/id_rsa
+#+end_src
+*** variations
+ssh tunnels with config: https://starkandwayne.com/blog/setting-up-an-ssh-tunnel-with-ssh-config/
+** *ed25519* ssh key
+much of this information taken from [[https://blog.g3rt.nl/upgrade-your-ssh-keys.html%0A][upgrade your ssh keys]]
+
+*** why?
+in summary,
+> DSA and RSA 1024 bit are deprecated now
+> Increase resistance to brute-force password cracking
+
+*** generating the new key
+#+begin_src sh
+ssh-keygen -o -a 100 -t ed25519
+#+end_src
+
+this will generate the key to ~~/.ssh/id_ed25519~
+
+everything else is pretty much the exact same!
+
+** restrict to command
+in authorized keys, the [[https://www.virtono.com/community/tutorial-how-to/restrict-executable-ssh-commands-with-authorized-keys/][command]] option can be used to restrict the user to a single command
+* Desktop Environment
+** KDE
+*** Compositor for gaming
+**** SDL Games
++ Most SDL games automatically request to disable the compositor. This generally helps maintain a more stable framerate
+**** Manual management
++ Compositor can be toggled with Shift+Alt+F12 by default
+*** KWin issues
++ KWin can be restarted with `kwin --replace &`, sometimes it's `kwin_x11` instead
++ Sometimes fonts in titlebars break, no fix is known other than resetting X
++ OpenBox can serve as a decent temporary alternative: `openbox --replace &`
++ Compositor can be sped up in Display Settings > Compositor
+** i3
+*** notes
+see specifically the [[file:rice_reis.org][notes on reis]]
+** xdg
+*** default browser
+setting default browser using ~xdg~ commands (also applies to generally setting [[https://wiki.archlinux.org/index.php/default_applications#xdg-open][default applications]])
+
+to set the default browser to Firefox:
+#+begin_src sh
+xdg-settings set default-web-browser firefox.desktop
+#+end_src
+
+to get the current default browser
+#+begin_src sh
+# get the default web browser
+xdg-settings get default-web-browser
+#+end_src
+
+* Laptop
+** Battery
+*** Powertop
+TOWRTE
+*** Auto-CpuFreq tool
+https://ol.reddit.com/r/linux/comments/ejxx9f/github_autocpufreq_automatic_cpu_speed_power/
+https://github.com/AdnanHodzic/auto-cpufreq
+(blog post) https://foolcontrol.org/?p=3124
+https://ol.reddit.com/r/linux/comments/ejxx9f/github_autocpufreq_automatic_cpu_speed_power/fd4y36k/
+* Dev
+** Vim
+*** Run command and append input
+~:r !command~
+example:
+#+begin_export ascii
+   September 2019         October 2019          November 2019   
+Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa
+ 1  2  3  4  5  6  7         1  2  3  4  5                  1  2
+ 8  9 10 11 12 13 14   6  7  8  9 10 11 12   3  4  5  6  7  8  9
+15 16 17 18 19 20 21  13 14 15 16 17 18 19  10 11 12 13 14 15 16
+22 23 24 25 26 27 28  20 21 22 23 24 25 26  17 18 19 20 21 22 23
+29 30                 27 28 29 30 31        24 25 26 27 28 29 30
+                                                                
+#+end_export
+** Emacs
+See [[brain:emacs][Emacs]] [brain]
+*** Org-mode
+see [[brain:org%20mode][Org-mode]] [brain]
+** Git
+*** Gitignore whitelisting
+information on [[https://jasonstitt.com/gitignore-whitelisting-patterns][gitignore whitelisting patterns]].
+* Wine
+*** 32-bit WINEPREFIX
++ Use wine like this: `WINEPREFIX="$HOME/.wine32" WINEARCH=win32 wine`
+*** Configurations for various engines
+**** Unity Games
++ As of Dec 2017, Wine doesn't work too well with newer DX versions, so add `-force-d3d9` to force DX9
++ Confirmed working with games:
+  + Furi
+**** XNA Games
+1. Set up a 32-bit prefix
+2. `wine-mono`
+3. Winetricks: `dotnet452`, `xna40`
+
+Confirmed working with games:
+  + SuperFighters Deluxe
+*** In KDE sometimes windows vanish
++ Try disabling compositor
++ Try minimizing other windows
+* Tinc
+DigitalOcean [[https://www.digitalocean.com/community/tutorials/how-to-install-tinc-and-set-up-a-basic-vpn-on-ubuntu-18-04%0A][tutorial]] on basic TINC configuration
+* Productivity
+** Calendar
+Calendar can be synchronized and accessed through the [[https://lostpackets.de/khal/index.html][Khal]] terminal calendar program | [[https://lostpackets.de/khal/configure.html][configuration instructions]] 
+Khal requires [[https://vdirsyncer.pimutils.org/en/stable/tutorial.html][vdirsyncer]] to be set up to read from CalDAV calendars.
+Google Calendar provides a [[https://developers.google.com/calendar/caldav/v2/guide][CalDAV API]] that needs to be enabled to access calendars through this protocol to allow syncing.
+
+** Email
+TOWRTE
+* Unix
+** Add user to group
+*** Arch
+#+begin_src sh
+sudo gpasswd -a xdrie docker
+#+end_src
+*** Ubuntu
+#+begin_src sh
+sudo usermod -aG docker xdrie
+#+end_src
+** Cron
+*** edit crontab
+edit crontab for a particular user. to edit the system wide crontab, use ~sudo~.
+#+begin_src sh
+crontab -e
+#+end_src
+
+*** what each field means
+this [[https://stackoverflow.com/a/35575322/13240621][stackoverflow post]] explains the format of crontab entries.

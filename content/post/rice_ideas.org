@@ -1,0 +1,14 @@
+#+TITLE: rice ideas
+#+DATE: 2020-01-21
+#+TAGS[]: rice
+
+some wip notes on ideas for a new i3 rice.
+
+* colors
+same background, but in different color themes, cycling based on time of day or day of the week.
+
+* binds
+right now there's a lot of needing to remember random keys for binds; for example, there are 3 different Rofi binds.
+instead, maybe I want to add a Rofi-mode instead and then allow keyboard arpeggios to choose the next action so there are more keys.
+for example, with the password-select, use ~Super+Shift+P~ to open *Password* mode and then ~Enter~ for password input or ~u~ for username input.
+this gives us a more modal UI that clogs up less of the keyboard shortcuts.
