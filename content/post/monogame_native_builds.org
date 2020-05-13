@@ -1,4 +1,4 @@
-#+TITLE: better native builds with monogame
+#+TITLE: better native monogame
 #+SUBTITLE: using .net core tools to build smaller, better native bundles
 #+AUTHOR: xdrie
 #+DATE: 2020-05-13
