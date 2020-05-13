@@ -2,6 +2,7 @@
 #+SUBTITLE: accessing a borg repo stored on an rclone remote
 #+DATE: 2020-05-12
 #+TAGS[]: backup
+#+TOC: true
 
 i have been experimenting with accessing a remotely stored [[brain:borg backup][borg]] repo.
 since these repos can get fairly large, i would like to be able to fully access backup data using only an rclone remote storage.

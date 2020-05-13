@@ -2,6 +2,7 @@
 #+SUBTITLE: quick reference for common things i need to do
 #+DATE: 2020-04-09
 #+TAGS[]: ref
+#+TOC: true
 
 a wip collection of notes and tips on random things i end up needing to do with my system.
 i expand it as i encounter new tasks, and hopefully i can consult it instead of looking things up next time.
