@@ -20,7 +20,7 @@ Host host-name
 #+end_src
 *** variations
 ssh tunnels with config: https://starkandwayne.com/blog/setting-up-an-ssh-tunnel-with-ssh-config/
-** *ed25519* key
+** ed25519 key
 much of this information taken from [[https://blog.g3rt.nl/upgrade-your-ssh-keys.html][upgrade your ssh keys]]
 
 *** why?
