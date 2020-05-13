@@ -1,0 +1,174 @@
+#+TITLE: duck intelligence
+#+SUBTITLE: decisions, planning, and personality modeling in Sor
+#+DATE: 2020-03-03
+#+TAGS[]: simdev gamedev projects sor
+#+TOC: true
+
+this is a condensed form of a presentation going over a lot of the ai workings in my game [[https://xhyi.itch.io/sor][Sor]].
+for a more standard presentation viewing experience, refer to the [[https://github.com/xdrie/Sor/releases/download/0.6.6.05-dev/Sor.Duck.Intelligence.pdf][PDF form]] of the presentation.
+
+* ducks
+decisions, planning, personality
+** note: project is wip
++ everything in this project is highly wip
++ any amount of the bird planning architecture may change
++ sor is a cool game
+  + more of a simulation than a game
++ we don't use capitalization and highlight unnecessarily
+
+* decision modeling
+** utility ai
++ how "useful" is an action?
++ given a list of considerations
+  + score each consideration by running various appraisals
+  + transform inputs on curves to score levels
+  + scores are in the range ~[0, 1]~
+  + optional thresholds attached to considerations
+    + score is ~0~ if ~score < threshold~
+
+** example: eat food
++ consideration "eat"
+  + appraisal "hunger"
+    + a curve that sharply increases as energy percentage drops
+  + appraisal "food availability"
+    + discrete ~0~ or ~1~ for current availability of food
+  + threshold ~0.6~
++ plans the "eat" objective on success
+
+** reasoner architecture
++ consideration
+  + series of appraisals and an action
++ appraisal
+  + function returning a score
++ reasoner
+  + given a series of considerations, choose the "best"
+    + the highest score is not necessarily the "best"
+    + sometimes, to introduce unpredictability and variety, a fuzzy-decision strategy is used to choose between several similarly-scoring considerations
+
+* planning
+** goal-oriented action planning (GOAP)
++ plan a sequence of actions to satisfy a goal
+  + actions specify preconditions, postconditions and costs
+  + goals are specified as a final postcondition
++ graph search for optimal path
+  + find the lowest-cost series of actions that reach the goal
+  + an algorithm like A* can be used to tune search with a heuristic
+  + A* heuristics can be biased to affect the "quality" of a plan
+
+** example: obtain food
++ goal: ~satiety > TARGET_SATIETY~
++ actions:
+  + eat bean
+    + precondition: existence of bean
+    + postcondition: ~satiety += BEAN_ENERGY~
+    + cost: distance/time to obtain bean
+  + visit tree
+    + precondition: existence of tree
+    + postcondition: ~satiety += BEAN_ENERGY * TREE_BEANS~
+    + cost: distance/time to reach tree
+
+* how birds think
+** real-time bird thinking
++ mind that runs a sense-think-act loop
+  + a mind is associated with systems that can be run at different update rates
+  + work offloaded to background threads
+    + handle more computationally intensive planning
+    + previous plans can be executed until new plans are available
++ sense
+  + reads information from the environment
++ think
+  + pick the most valuable objective and plan actions
++ act
+  + carry out real-time adjusted plans
+
+** phase 1: select objective
++ use a reasoner to choose an objective
+  + eat
+    + get energy by consuming beans
+  + explore
+    + discover more of the map
+  + defend
+    + self-preservation by fight or flight
+  + socialize
+    + build opinion with other birds
+
+** phase 2: plan actions
++ map the objective to action planning model
+  + the phase 1 objective chooses the relevant actions
+  + current state of the model based on sensed input
+  + goal state is determined by the objective and bird state
++ use GOAP planner to get the best sequence of actions
+  + plan is a series of action nodes
+  + each node contains an intermediate state of the model
+
+** interaction queue
++ map abstract action plan to virtual controller input
++ interaction plans represent queued actions in the world
+  + target sources provide positional objectives
+    + fixed locations such as trees
+    + moving locations such as other birds or beans
+  + approach types are used to keep distances
+    + flocking via custom approaches on multiple birds
+  + task plans represent physical actions
+    + feed task involves distance tracking then feeding another bird
+
+* personality engine
+** original idea: lunch simulation
++ simulate people eating lunch at restaurants
++ each person has a personality
+  + represented by the HEXACO model
+    + 6-aspect model of human personality used in psychology
+  + immutable values
++ traits can be calculated from a personality
+  + traits describe a person's expected response to a situation
+  + values influenced by different aspects of personality
+  + since personality is fixed, trait values are also fixed
++ interaction effects based on participant traits
+  + conversations between people can affect their opinions of each other
+
+** personality representation
++ personality values are stored as a vector
++ traits computed from personality and trait vectors
+  + dot product for trait value in range ~[-1, 1]~
++ interactions use a function of the trait value
+  + the trait value is used to map along a curve
+  + trait values are distributed around ~0~
+    + represents the relative value to the baseline
+
+** bird personalities
++ personality aspects
+  + anxiety
+  + social awareness
+  + emotionality
+  + v1
++ common traits
+  + loyalty
+  + aggression
+  + wariness
+  + inquisitiveness
+  + sociability
+
+** example: sociability trait
++ example bird personality ~(+0.8, 0.4)~
+  + high anxiety and medium social awareness
++ using the sociability trait ~(-0.1, 1.0)~
++ sociability = ~0.32~
++ factored into an appraisal for a socialize consideration
++ used to adjust the opinion bonus for being fed
+
+** bird emotions
++ transient values based on recent interactions
+  + emotions fade toward ~0~ with time at a fixed decay rate
++ can influence behavior to a lesser extent
+  + traits provide primary influences on behavior
+  + emotions can slightly shift the balance in either direction
+  + recent actions can secondarily influence actions
++ cause different responses to the same stimuli
++ emotional sensitivity determined by traits
+  + traits affect how much an action impacts emotions
+
+* conclusion
+** fun birds
++ once i figure out how to make birds fun
+  + i will let you know
++ the game runs on windows, mac, and linux
