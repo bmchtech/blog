@@ -1,4 +1,5 @@
 #+TITLE: rice ideas
+#+AUTHOR: xdrie
 #+DATE: 2020-01-21
 #+TAGS[]: rice
 

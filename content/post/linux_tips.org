@@ -1,5 +1,6 @@
 #+TITLE: linux tips
 #+SUBTITLE: quick reference for common things i need to do
+#+AUTHOR: xdrie
 #+DATE: 2020-04-09
 #+TAGS[]: ref
 #+TOC: true

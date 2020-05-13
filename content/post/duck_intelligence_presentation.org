@@ -1,5 +1,6 @@
 #+TITLE: duck intelligence
 #+SUBTITLE: decisions, planning, and personality modeling in Sor
+#+AUTHOR: xdrie
 #+DATE: 2020-03-03
 #+TAGS[]: simdev gamedev projects sor
 #+TOC: true
