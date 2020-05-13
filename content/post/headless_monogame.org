@@ -1,0 +1,92 @@
+#+TITLE: headless monogame
+#+SUBTITLE: tweaking desktop monogame to run headlessly
+#+AUTHOR: xdrie
+#+DATE: 2020-05-02
+#+TAGS[]: gamedev
+#+TOC: true
+
+* goals
+i've been working on a networking layer for my game engine, which is based on MonoGame.
+since i already have the physics code written, i figured that if i could get MonoGame to run headlessly, i could share the same code and the same assembly between the client and the server.
+
+* existing solutions
+after searching for how to run MonoGame headlessly, i found that nobody had actually posted a satisfactory solution.
+one reply suggested a change that would require patching MonoGame itself, which i would rather avoid simply to spare myself the trouble of needing to maintain my own MonoGame fork.
+here's the old [[https://community.monogame.net/t/headless-monogame/7063][thread]] from 2016 on the monogame forum asking how to do this, and [[https://community.monogame.net/t/headless-monogame/7063/8][the reply]] that contains the [[https://web.archive.org/web/20200513053435/https://pastebin.com/Hi4tf3px][MonoGame patch]].
+there's also an [[https://github.com/MonoGame/MonoGame/issues/7121][issue]] on the MonoGame repository requesting a headless runtime, which is still open and unresolved at the time of writing.
+
+* my attempt
+after looking through the MonoGame source, i vaguely remembered that [[https://www.libsdl.org/][SDL]] (which MonoGame DesktopGL is built on) provides the ~SDL_VIDEODRIVER~ variable ([[https://web.archive.org/web/20200501212538/https://wiki.libsdl.org/FAQUsingSDL#How_do_I_choose_a_specific_video_driver.3F][described]] vaguely in the FAQ, and [[http://sdl.beuc.net/sdl.wiki/SDL_envvars][in detail]] on the ~SDL_envvars~ page).
+because we are going to be messing with abstracted implementation details, this will obviously only work on desktop.
+
+** sdl dummy driver
+
+the ~dummy~ driver looks like just what we need!
+it should initialize SDL so that there is no output.
+as long as we don't call anything in MonoGame that will try to access the fake graphics resources, the game loop should transparently run headlessly.
+even better, this change should be entirely invisible to MonoGame, so we can use the official version.
+
+** dummy graphics device
+if the application tries to initialize the ~GraphicsDevice~, bad things will happen because MonoGame will try to access the game window.
+
+however, if we do /not/ initialize the ~GraphicsDevice~, MonoGame will attempt to use an instance of ~IGraphicsDeviceService~ as a provider for initializing graphics.
+
+to make this work smoothly, we will simply define our own dummy class:
+#+begin_src csharp
+	public class DummyGraphicsDeviceService : IGraphicsDeviceService {
+		public GraphicsDevice GraphicsDevice { get; }
+		public event EventHandler<EventArgs> DeviceCreated;
+		public event EventHandler<EventArgs> DeviceDisposing;
+		public event EventHandler<EventArgs> DeviceReset;
+		public event EventHandler<EventArgs> DeviceResetting;
+	}
+#+end_src
+
+then register it in our ~Game~ constructor:
+#+begin_src csharp
+Services.AddService(typeof(IGraphicsDeviceService), new DummyGraphicsDeviceService());
+#+end_src
+
+** headless run
+to run our application headlessly by overriding the SDL driver:
+#+begin_src sh
+SDL_VIDEODRIVER=dummy ./MyGame
+#+end_src
+
+** auto-set the variable
+the above solution works, but requires us to specify this driver override on the command line or via an environment variable in some other fashion.
+depending on your needs, this may be enough, but i wanted to be able to set the video driver in code so that i could provide a ~UseHeadless~ method in my engine.
+
+my first thought was to simply use ~SetEnvironmentVariable~ to set the video driver variable.
+however, this does not work because ~SDL_getenv~, the [[https://github.com/SDL-mirror/SDL/blob/5f560547596381c62bc8c632cffd0b498adbff22/src/stdlib/SDL_getenv.c#L176-L188][function]] that is used to [[https://github.com/SDL-mirror/SDL/blob/bac78e90ddbbdb085b535c5624a4223fe5dfcbff/src/video/SDL_video.c#L491][get the video driver variable]], calls the Unix ~getenv(3)~ [[http://man7.org/linux/man-pages/man3/getenv.3.html][function]].
+as described in this [[https://stackoverflow.com/a/5037613/13240621][stackoverflow answer]], ~getenv~ makes a copy of the environment variable block at startup, and so setting additional process environment variables will not affect the application's copy.
+in order to interact with the application's environment variable block, we need to call the corresponding system APIs for ~setenv~.
+
+luckily, SDL does export the ~SDL_setenv~ [[https://github.com/spurious/SDL-mirror/blob/6b6170caf69b4189c9a9d14fca96e97f09bbcc41/src/stdlib/SDL_getenv.c#L48][function]], which wraps that functionality from us in a cross platform way.
+the SDL documentation [[http://sdl.beuc.net/sdl.wiki/SDL_envvars][explicitly states]] that the function is "intended for debugging/testing" and is "not meant to...provide portable access to OS environment variables."
+despite this warning, we are going to go ahead and do just that, because it works.
+
+** using p/invoke to sdl
+using P/Invoke, we can call:
+#+begin_src csharp
+SDL_setenv("SDL_VIDEODRIVER", "dummy", overwrite: 0);
+#+end_src
+
+for reference, i hijacked monogame's ~FuncLoader~ [[https://github.com/MonoGame/MonoGame/blob/1a90e578896e1a1fe6c8706af029322593c09f2d/MonoGame.Framework/Platform/Utilities/FuncLoader.Desktop.cs][class]] and used that to bind the native function [[https://github.com/MonoGame/MonoGame/blob/4f4984a4ae0d87e190374be99dd39f3d9c479726/MonoGame.Framework/Platform/SDL/SDL2.cs#L143-L150][just like]] in the internal ~SDL2~ class in MonoGame.
+
+my function declaration looks like this:
+#+begin_src csharp
+		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+		public delegate int d_sdl_setenv(string name, string value, int overwrite);
+
+		public static d_sdl_setenv SDL_setenv;
+#+end_src
+
+and my code to load the function:
+#+begin_src csharp
+SDL_setenv = Native.LoadFunction<d_sdl_setenv>(sdl, nameof(SDL_setenv));
+#+end_src
+
+* conclusion
+using the SDL video driver override environment variable, we can make MonoGame run headlessly on desktop without modifying the library.
+we can also use P/Invoke to enable this functionality programatically, albeit in a somewhat hacky way.
