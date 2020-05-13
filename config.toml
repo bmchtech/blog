@@ -11,6 +11,8 @@ paginate = 5
   centerTheme = true
   tocTitle = "contents"
 
+  favicon = "favicon.ico"
+
 [languages]
   [languages.en]
     title = "rie blog"
