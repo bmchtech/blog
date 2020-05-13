@@ -1,0 +1,81 @@
+#+TITLE: better native builds with monogame
+#+SUBTITLE: using .net core tools to build smaller, better native bundles
+#+AUTHOR: xdrie
+#+DATE: 2020-05-13
+#+TAGS[]: gamedev
+#+TOC: true
+
+* intro
+since .NET Core was released, its native publishing options have improved significantly.
+it is now possible to build a MonoGame application and build it into a fully native, self-contained release that is less (sometimes significantly less!) than ~10 MB~.
+
+** tools
+creating these builds is possible by using a number of tools in tandem, including:
++ [[https://github.com/dotnet/corert][CoreRT]]
++ [[https://upx.github.io][UPX]]
+
+* setup
+we need to set up CoreRT in our project.
+i find that setting it up so that there are configurable flags in the project makes it easy to customize the build when scripting.
+
+add CoreRT to your project as described in the [[https://github.com/dotnet/corert/tree/master/samples/MonoGame#add-corert-to-your-project][example MonoGame project README]].
+
+then, add the following configuration to the project file, replacing the existing ~PackageReference~:
+#+begin_src xml
+    <!-- Native Compilation Modes -->
+
+    <ItemGroup Condition="'$(CoreRTMode)' != ''">
+        <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-*"/>
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(CoreRTMode)' != ''">
+        <DefineConstants>$(DefineConstants);CORERT</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(CoreRTMode)' == 'Moderate' or '$(CoreRTMode)' == 'High'">
+        <IlcGenerateCompleteTypeMetadata>false</IlcGenerateCompleteTypeMetadata>
+        <IlcOptimizationPreference>Size</IlcOptimizationPreference>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(CoreRTMode)' == 'High'">
+        <RootAllApplicationAssemblies>false</RootAllApplicationAssemblies>
+        <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
+        <IlcInvariantGlobalization>true</IlcInvariantGlobalization>
+        <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(CoreRTMode)' == 'High'">
+        <IlcArg Include="--removefeature:EventSource" />
+        <IlcArg Include="--removefeature:FrameworkStrings" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <RdXmlFile Include="rd.xml"/>
+    </ItemGroup>
+
+#+end_src
+
+an example is in the Sor runner [[https://github.com/xdrie/Sor/blob/4b5eb0179c8157d94dc4885bd3a950d2fec1bb6f/src/Sor/SorDk/SorDk.csproj][project file]].
+
+** build process
+we can run a build using some sane defaults based on the configuration we put in the project file:
+#+begin_src sh
+dotnet publish -c Release -f netcoreapp3.1  -r linux-x64 /p:CoreRTMode=Default
+#+end_src
+
+this will put the generated native binaries in the publish dir.
+while they are self contained, there is still a lot that can be done to optimize the output size.
+
+** optimization
+the CoreRT documentation [[https://github.com/dotnet/corert/blob/7ebb373ec77de7ad904f5680cf0636497c6c38d4/Documentation/using-corert/optimizing-corert.md#options-related-to-code-generation][lists some options]] that can set CoreRT to optimize for either speed or size.
+
+on unix platforms, the size of the binary [[https://github.com/dotnet/corert/blob/7ebb373ec77de7ad904f5680cf0636497c6c38d4/Documentation/using-corert/optimizing-corert.md#special-considerations-for-linuxmacos][can be reduced significantly]] simply by running ~strip~.
+for Sor, this step reduced the binary from ~55 MB~ to ~44 MB~, or about a 20% reduction.
+
+when specifically trying to improve the size of the application, upx can provide significant size reductions.
+anecdotally, with Sor, ~upx --lzma~ reduces the binary size from ~44 MB~ to ~10 MB~, for an excellent ratio of about ~0.24~.
+UPX with such custom settings can be somewhat slow to run but usually produces fairly good results in terms of compression ratio.
+obviously, using UPX will impact the startup time of the application because it needs to be decompressed prior to being run.
+
+* example
+this is an example [[https://github.com/xdrie/Sor/blob/947b7dfd378b0b5dceb531cf05272d34ba2c0cca/script/build_arc.sh][archive builder script]] that i use to build native releases of Sor.
