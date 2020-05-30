@@ -2,7 +2,7 @@
 #+SUBTITLE: tweaking desktop monogame to run headlessly
 #+AUTHOR: xdrie
 #+DATE: 2020-05-02
-#+TAGS[]: gamedev
+#+TAGS[]: dev gamedev
 #+TOC: true
 
 * goals
