@@ -7,7 +7,7 @@
 
 * intro
 since .NET Core was released, its native publishing options have improved significantly.
-it is now possible to build a MonoGame application and build it into a fully native, self-contained release that is less (sometimes significantly less!) than ~10 MB~.
+it is now possible to build a MonoGame application and build it into a fully native, self-contained release that is less (sometimes significantly less!) than ~10 MB~. note that this also applies to any general .NET Core application, including web and console apps, though this guide will focus on a MonoGame example.
 
 ** tools
 creating these builds is possible by using a massive laundry list of tools in tandem, including:
