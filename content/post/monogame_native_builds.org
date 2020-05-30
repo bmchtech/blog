@@ -10,7 +10,7 @@ since .NET Core was released, its native publishing options have improved signif
 it is now possible to build a MonoGame application and build it into a fully native, self-contained release that is less (sometimes significantly less!) than ~10 MB~.
 
 ** tools
-creating these builds is possible by using a number of tools in tandem, including:
+creating these builds is possible by using a massive laundry list of tools in tandem, including:
 + [[https://github.com/dotnet/corert][CoreRT]]
 + [[https://upx.github.io][UPX]]
 
