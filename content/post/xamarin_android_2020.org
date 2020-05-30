@@ -1,0 +1,31 @@
+#+TITLE: xamarin.android on linux
+#+SUBTITLE: using xamarin.android in rider on linux
+#+AUTHOR: xdrie
+#+DATE: 2020-05-29
+#+TAGS[]: dev
+
+nowadays, the latest pipelines can be found on the [[https://dev.azure.com/xamarin/public/_build][azure dev page]]: in particular, the [[https://dev.azure.com/xamarin/public/_build?definitionId=48&_a=summary][xamarin.android oss package]].
+from there, go to linux artifacts ([[https://dev.azure.com/xamarin/public/_build/results?buildId=19444&view=artifacts&type=publishedArtifacts][example]]).
+here are enough binaries to set up an install without needing to build from scratch.
+
+the bundle we are interested in is the one labeled *Linux Packages*.
+extract that archive, then unpack the ~data.tar.xz~ of the ~.deb~ file, then copy the data to your mono installation:
+
+#+begin_src sh
+rsync -v -a usr/lib/xamarin.android /usr/lib/xamarin.android 
+rsync -v -a usr/lib/mono /usr/lib/mono
+#+end_src
+
+this should make the Xamarin.Android SDK visible to MSBuild.
+ensure that the variables for the SDK path are configured (this can be done in Rider settings)
+for example, the command line options ~/p:AndroidSdkDirectory=/opt/android-sdk /p:AndroidNdkDirectory=/opt/android-ndk~.
+
+this should be able to build a sample project and even deploy APKs and debug.
+
+to test it out, try the [[https://github.com/xamarin/xamarin-android/tree/master/samples/HelloWorld][HelloWorld]] project by simply using MSBuild:
+#+begin_src sh
+msbuild HelloWorld.csproj
+#+end_src
+
+since we copied the frameworks to our Mono install earlier, MSBuild should be able to pick up the project SDK automatically.
+if it complains about not finding SDKs, pass the command line options specifying android SDK path as described earlier.
