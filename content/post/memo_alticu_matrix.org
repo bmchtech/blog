@@ -20,7 +20,7 @@ To connect to Matrix and use it for communication, one of [[https://matrix.org/c
 To learn more about matrix, see this excellent [[https://hacks.mozilla.org/2018/10/dweb-decentralised-real-time-interoperable-communication-with-matrix/][blog post]].
 
 * recommended clients
-+ desktop: [[https://github.com/Nheko-Reborn/nheko/releases][nheko]]
++ desktop: [[https://riot.im/download/desktop/][riot desktop]] (if you don't mind dealing with buggy beta software [[https://github.com/Nheko-Reborn/nheko/releases][nheko]])
 + web: [[matrix.alt.icu/][hosted riot]]
 + android: [[https://matrix.org/docs/projects/client/riotx][riotX]]
 + ios: [[https://matrix.org/docs/projects/client/riot-ios][riot]]
