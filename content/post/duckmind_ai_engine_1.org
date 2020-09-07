@@ -1,0 +1,185 @@
+#+TITLE: duckmind ai engine, part 1
+#+SUBTITLE: overview and core concepts of ducia
+#+AUTHOR: xdrie
+#+DATE: 2020-09-07
+#+TAGS[]: dev gamedev projects sor
+#+TOC: true
+
+* overview
+[[https://github.com/xdrie/DuckMind][duckmind]] is a collection of projects that are based on [[https://github.com/xdrie/Sor/][Sor]]'s AI engine, and provides its [[https://github.com/xdrie/Sor/tree/main/src/Sor/Sor/AI][game-playing AI]] functionality as a reusable library.
+
+It implements the multi-phase AI system described in [[https://blog.rie.icu/post/duck_intelligence_presentation/][duck intelligence]].
+
+Generally, this system is based around the idea of hierarchically combining multiple advanced game-playing AI algorithms into a decision making and action pipeline.
+** features
+the *Ducia* library provides the core AI algorithms and classes. when using them in external projects, they are typically subclassed for application specific functionality, though many good defaults are provided.
+
++ *Framework* - Core AI algorithms, including pathfinding, goal-oriented action planning, and utility-based reasoners
++ *Calc* - mathematical utility classes for AI-related computations
++ *Cogs* - personality engine classes (dating back to lunchlib)
++ *Layers* - abstract framework for combining multiple *Systems* in a sense-think-act architecture
+* concepts
+** mind
+  :PROPERTIES:
+  :CUSTOM_ID: mind
+  :END:
+
+the *Mind* is the encapsulating representation of the AI consciousness
+of an agent. it represents a unit that implements the sense-think-act
+architecture.
+
+the sense-think-act paradigm can be summarized as follows: + sense:
+receive input from the environment and convert it to a useful
+representation + think: based on environment state, make plans and
+decisions to respond to the environment + act: given a set of plans,
+carry them out in a coordinated manner
+
+*** state
+   :PROPERTIES:
+   :CUSTOM_ID: state
+   :END:
+
+every agent will have a single mind, and this mind has an associated
+*MindState*, which serves as the working memory and cache.
+
+*** systems
+   :PROPERTIES:
+   :CUSTOM_ID: systems
+   :END:
+
+the mind is itself composed of various systems, which are reusable units
+of functionality that can be instanced across multiple minds.
+
+systems are divided into /sensory/ and /cognitive/ systems: + *sensory*
+systems run during the /sense/ phase, and serve to gather information
+about the environment and store it in working memory for quick access +
+*cognitive* systems run during the /think/ phase, and run the planning
+algorithms to make decisions and plans based on available information
+
+**** example systems: Sor
+    :PROPERTIES:
+    :CUSTOM_ID: example-systems-sor
+    :END:
+
+- the
+  [[https://github.com/xdrie/Sor/blob/main/src/Sor/Sor/AI/Systems/VisionSystem.cs][Vision]]
+  system is a basic /sensory/ system that detects nearby birds and
+  stores the results in working memory.
+- the
+  [[https://github.com/xdrie/Sor/blob/main/src/Sor/Sor/AI/Systems/ThinkSystem.cs][Think]]
+  system is a =PlannerSystem=, which is a type of /cognitive/ system
+  that uses a utility reasoner to make decisions.
+
+*** pipelines
+   :PROPERTIES:
+   :CUSTOM_ID: pipelines
+   :END:
+
+the mind has two main pipelines: the /autonomous/ pipeline and the
+/conscious/ pipeline.
+
+**** autonomous pipeline
+    :PROPERTIES:
+    :CUSTOM_ID: autonomous-pipeline
+    :END:
+
+generally, the autonomous pipeline runs on the main thread, because it
+is designed to run quickly and not require complex computation. in
+addition, it frequently needs to access game state, so by running on the
+game thread, up-to-date game state information is readily available.
+
+**** conscious pipeline
+    :PROPERTIES:
+    :CUSTOM_ID: conscious-pipeline
+    :END:
+
+generally, the conscious pipeline is offloaded to the thread pool, and
+runs asynchronously independently of the autonomous pipeline. the
+conscious pipeline includes the /think/ phase, which includes complex AI
+algorithms that can require a significant amount of time to execute.
+thread-pooling the AI makes efficient use of modern multi-core CPUs to
+maximize information throughput when simulating many agents.
+
+thread-pooling is enabled by default, but can be disabled by setting
+=Mind.useThreadPool= to =false=. when thread-pooling is disabled, the
+conscious pipeline will be run between the /sense/ and /act/ phases on
+the autonomous pipeline's thread, usually the main thread.
+
+since working memory is cached in the MindState, this pipeline can
+generally work completely independently of the autonomous pipeline. when
+results are ready, it can use message queues in the MindState to pass
+information to the /act/ phase.
+
+*** signals
+   :PROPERTIES:
+   :CUSTOM_ID: signals
+   :END:
+
+signals represent events in a way roughly analagous to nervous system
+impulses. signals are sent to a mind by the external environment,
+passing an important message about the environmental interaction.
+
+within the conscious pipeline, during the /think/ phase, systems based
+on =PlannerSystem= are able to process signals.
+
+in the context of a game, certain events such as being hit by an object
+within the game physics engine should call =Mind.signal= to add a signal
+to the signal queue in working memory.
+
+** plan
+  :PROPERTIES:
+  :CUSTOM_ID: plan
+  :END:
+
+the *Plan* is the secondary layer in the hierarchical planning pipeline.
+
+the purpose of the Plan layer: given a general goal, search the
+available action space and put together a plan to achieve the goal.
+
+put simply: plan a sequence of actions to satisfy a goal
+
+this is generally implemented via goal-oriented action planning. in
+Ducia, this is done using the =ActionPlanningModel= class, which is
+based on [[https://github.com/active-logic/xgoap][Activ BeyondGOAP]].
+
+a model is simply a set of variables that indicates an intermediate step
+in the plan.
+
+for example, in a model for gathering flowers, a =flowersGathered= value
+would track the number of flowers gathered so far.
+
+goals are specified as predicates: =flowersGathered >= 4= indicates a
+goal meaning that actions have been taken to increase the number of
+flowers over this threshold.
+
+*** options, costs, and conditions
+   :PROPERTIES:
+   :CUSTOM_ID: options-costs-and-conditions
+   :END:
+
+each action has an associated cost to execute. an action and its cost
+together are known as an *option*.
+
+each action also specifies preconditions and postconditions: +
+preconditions indicate the requirements for an option to be valid +
+postconditions, a.k.a. effects, indicate the effect of taking an action
+on the planning model
+
+by specifying our constraints in preconditions, we ensure that all
+sequences created of these actions are valid.
+
+*** planning
+   :PROPERTIES:
+   :CUSTOM_ID: planning
+   :END:
+
+selecting an optimal plan given a set of options is fairly
+straightforward. typically it is done using a graph-search algorithm
+such as A* to find the path to the goal with the least cost.
+
+the solver is called by using =Solver<T>.Next(model, goal)= given a
+model instance
+
+if no valid combination of the options leads to the goal, the solver
+returns =null=.
+
