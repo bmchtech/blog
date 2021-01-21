@@ -34,6 +34,10 @@ summaryLength = 20
         identifier = "about"
         name = "about"
         url = "/about"
+      [[languages.en.menu.main]]
+        identifier = "contact"
+        name = "contact"
+        url = "https://rie.icu/contact.html"
       # [[languages.en.menu.main]]
       #   identifier = "showcase"
       #   name = "Showcase"
