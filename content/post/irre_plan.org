@@ -1,4 +1,4 @@
-#+TITLE: irre architecture devlog
+#+TITLE: irre-tools devlog
 #+SUBTITLE: working project notes collection
 #+AUTHOR: xdrie
 #+DATE: 2020-12-05
