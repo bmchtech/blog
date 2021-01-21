@@ -5,6 +5,135 @@
 #+TAGS[]: dev gamedev projects sor notes
 #+TOC: true
 
+* Progress
+** Graphical juice
+An interesting way to make the graphics look cooler that I discovered accidentally; mixing the color channels (for example, swapping red and blue) will give it a cool effect. Perhaps if this could be gradually blended in and out, maybe even as an energy overload indicator or grayscale to indicate lack of energy, to communicate that energetic state can affect visual perception.
+** AI
+*** Refactor to Engine
+At this point, the AI has become pretty interesting and fairly advanced, so I want to create an API out of it.
+That way, the AI engine can be used to run agents for other simulations.
+
+Perhaps name the engine ~DuckMind~.
+
+The engine would be a component-based system, that would likely depend on Nez for math and types.
+However, the component system would be independent of Nez, and instead would be a relationship of "Mind has Components" rather than using polymorphism with the mind.
+
+Ideally, this should provide all the current functionality with room for extension for simulation, specific things, but should also maximize the amount of shared code
+that can be extracted to the library, as that would allow broader usage of the library without first creating a detailed scenario.
+
+It is okay for init time to be higher, as long as per-loop hot performance of the mind remains good.
+
+Currently, the AI is built in a tiered system.
+Since not every node of each tier requires a tier below it (this explodes complexity), the tiers should be as independent and decoupled as possible.
+However, the tools for each tier will still be available; just that using the broadest tier will not necessitate using more specific tiers.
+*** Duck Intelligence and Socialization Engine (DISE)
+Sor implements an AI system that allows it to model duck intelligence and socialization.
+**** Lunchlib AI Continuation
+imported and adapted the code from older agent logic research project ("Lunch Simulator")
+start working on the personality vector representation.
+**** Architecture
+***** Logic algorithm split
+reasoner is generally reserved for choosing higher-level actions.
+the actual execution of these actions is left to simpler, more precise subroutines.
+***** Hierarchy
+Use the utility planner to select the most "useful" objective. it gives the planner its target world state and leaves it up to the planner to figure out the actions necessary to reach that goal state. the reasoner just decides what the best goal is, the planner figures out how to reach that goal.
+
+based on my research so far of goap, i want to use the [[https://github.com/active-logic/xgoap][XGOAP]] library. since it looks like most of those are based on boolean preconditions and postconditions (for obvious reasons), we need to let goap do high-level planning of the steps/actions required. for example, goap could tell us to "eat beans."
+
+actually carrying out that task of eating beans will mean constructing yet another plan on how to achieve that goal, though this will not be done by a planner, it will be done by handwritten code paths. for example, to eat beans, i will have code to eat the nearby beans in a particular order until a quota is reached. it will pursue goals in order. if an order becomes no longer valid, it will be canceled. if it was a critical order, the whole plan will be invalidated. then, a new plan will have to be formed. in addition, if utility decides that a new objective is more important, the current action plan will be discarded and a new one will be instituted.
+***** Separating action planning from action execution
+both the action planning and execution systems should be distinct and able to operate independently (minimally coupled). that way, the action execution only needs to care about how to carry out the immediate task in the world given very detailed instructions. all the plan generators need to create detailed plans to feed to these though. for example, if we are adding pathfinding, we shouldn't need to add any new support to the plan executor; all we need to do is add some more plans to our task queue.
+*** Performance/Optimization
+the lighter the computational load of each unit's AI is, the more AIs we can support. ideally we would aim to reduce the compute load by reducing unnecessary or unused computations, and decreasing the frequency of expensive ones. a lot of the sense/think can happen on worker threads.
+for example, vision is not something that needs to be recomputed every update frame. significant savings could be gained by simply updating vision every 0.2sec or such.
+one cool idea! make the ai update timers flexible, so for ai out of the scene the updates can be much slower and thus much performance can be gained. we can focus our compute resources on the ai nearby, as that will be more interesting.
+for now, use Tasks and manual task management, but in the future if optimization can be gained by using Nez primitives such as Nez Coroutine, look into that.
+*** Threading
+Use ~Interlocked~ for atomic variable operations across threads.
+*** Personality
+**** eating/feeding
+~receptiveness~ based on traits. this is used to scale the opinion bonus from being fed a capsule.
+
+a revision that would be cool is to make birds easier to feed; this would be done
+**** emotions
+need to add emotions soon.
+*** Considerations
+**** Social
+Social objective aims to make friends with other birds, usually by feeding them. In the future perhaps it could do things like build rapport by proximity support to a friendly bird.
+The consideration will only be selected if there's a bird with a plausible chance of making a friend with. Thus, we're guaranteed to have at least one nearby bird that is a candidate.
+Select the first candidate (this represents that candidate being the highest expected value for feeding) and try to make friends with them. In the future perhaps use multiple heuristics and a GOAP solver to figure out what birds to feed and for what costs, taking into account things like speed discrepancies between the birds or distance.
+**** Explore
+to-do
+**** Defend
+to-do
+*** Pathfinding
+**** A* heuristics
+excellent reading on use of the heuristic: http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html
+map representations: http://theory.stanford.edu/~amitp/GameProgramming/MapRepresentations.html
+**** Structural navigation graph
+The map analysis stage can build a proper room graph representing connections between the rooms, but this may not be particularly useful for actually understanding how to navigate the structure of the world.
+Instead, the room graph should be used to compute a "structural navigation graph" that contains nodes with positions corresponding to world positions; each room will translate into multiple nodes on this graph. For example, a room will have a node at the center, representing "being inside" the room, and two additional nodes per door, one slightly inside the door and one slightly outside. This way, a bird can path from any room to any other room by simply following the open lanes from doorway to doorway.
+
+To build the structural navigation graph, start with the room graph. Then, we add four "nodes of indirection" between each room-to-room link; first the inner-door of the local room, then the outer-door of the local room, then the outer-door of the far room, then the inner-door of the far room.
+We use breadth-first-traversal on the room graph to discover all the nodes. Then, we map each room node to a "structural navigation room center" node, each of which start off completely unconnected. Then, we iterate through all the center rooms, iterating through each of their door-links. For each door-link, we then generate the four nodes of indirection (we only do the local two, and each of these are mapped to the "Door" edge so that we can look it up. when the other side of the link is processed, we do the other two.)
+The end result of this processing will be the structural navigation graph, which can then be traversed by A*.
+** Persistence
+*** Saving generated maps
+Possible ways:
++ save the rng seed used for mapgen
+  + this may be bad because rng seed is used for plenty of other generation than just mapgen
+  + if this is the option chosen, a separate rng should be created for mapgen
++ serialize the grid and recreate the roomrects from that
+
+** Mechanics
+*** Fruit trees
+In rooms, fruit seeds can be planted that grow into trees that release capsules. trees can be generated.
+perhaps seeds can be spread and new trees can start to grow.
+Later stages (7-10) release fruit.
+*** Pips
+ pips represent 40 opinion (red, orange, yellow, blue, green)
+ <-500 to -300: red
+-300 to -100: orange
+-100 to 100: yellow
+100 to 300: blue
+300 to >500: green
+*** Boosting mechanics
+Boosting now drains energy at a per-second rate. While boosting, the bird passes through any walls.
+*** Evolution
+Make bird kinematics and everything computed based on functions of its mass.
+** Map generation
+*** Tilemap analysis
+we attempt to analyze the tilemap to convert it into a better data structure. one important thing we want to be able to do is detection of rooms.
+**** room detection
+attempt to simply find all the rooms by using the corners. find the top left corner, go right until a top right corner, and etc. to create a clockwise loop. This can be saved as a Room.
+to detect doors and such edges, while scanning along the edges, any gaps are listed as exits.
+**** edge detection
+after a room detection pass which finds all rooms and their doors, we iterate over all the rooms and each of their doors.
+from a corner of the door, we scan outward until we intersect another room. if the intersect happens before out-of-range, then we add an edge.
+*** Tilemap generation
+Start with a big grid.
+*** Links
+1) https://gamedev.stackexchange.com/questions/121823/how-do-i-implement-level-generation-based-on-graph-grammars
+2) https://ondrejnepozitek.github.io/ProceduralLevelGenerator-Unity/docs/roomTemplates
+3) http://theory.stanford.edu/~amitp/GameProgramming/MapRepresentations.html
+4) https://www.reddit.com/r/roguelikedev/comments/6vuw7i/faq_fridays_revisited_22_map_generation/
+5) https://www.gridsagegames.com/blog/2014/06/procedural-map-generation/
+6) https://ondra.nepozitek.cz/blog/42/dungeon-generator-part-1-node-based-approach/
+7) https://www.reddit.com/r/proceduralgeneration/comments/1sx5ul/graphbased_dungeon_generator_improvement_ideas/
+8) https://gamedev.stackexchange.com/questions/38721/how-can-i-generate-a-navigation-mesh-for-a-tile-grid
+9) https://gamedev.stackexchange.com/questions/22178/is-there-an-algorithm-to-detect-the-mainland-on-a-2d-map
+** Funny bugs
+*** "Spill the beans"
+#+begin_quote
+so i feed this bird, and its social objective tells it it wants to feed me
+so it goes to a safer distance out of caution, then while trying to feed me it accidentally just releases all of its energy beans
+and then it starts chasing after them again; meanwhile, Big Bird is like gimme some of those :b:eans
+#+end_quote
+** Time log
++ As of today (2020-01-22 00:46:25), have logged 13h45m into the project.
++ As of right now (2020-01-22 19:07:50) have logged about 20h into the project.
++ As of today (2020-03-03 15:31:52), have logged about 61h into the project.
++ As of today (2021-01-20 20:00:16), have logged 136h into the project.
 * Tasks [0/11]
 ** TODO control [3/6]
 *** DONE add ~down~ to slow down
@@ -399,132 +528,3 @@ CLOSED: [2020-01-23 Thu 08:03]
 *** DONE game exit
 CLOSED: [2020-03-03 Tue 00:35]
 - State "DONE"       from "TODO"       [2020-03-03 Tue 00:35]
-* Progress
-** Graphical juice
-An interesting way to make the graphics look cooler that I discovered accidentally; mixing the color channels (for example, swapping red and blue) will give it a cool effect. Perhaps if this could be gradually blended in and out, maybe even as an energy overload indicator or grayscale to indicate lack of energy, to communicate that energetic state can affect visual perception.
-** AI
-*** Refactor to Engine
-At this point, the AI has become pretty interesting and fairly advanced, so I want to create an API out of it.
-That way, the AI engine can be used to run agents for other simulations.
-
-Perhaps name the engine ~DuckMind~.
-
-The engine would be a component-based system, that would likely depend on Nez for math and types.
-However, the component system would be independent of Nez, and instead would be a relationship of "Mind has Components" rather than using polymorphism with the mind.
-
-Ideally, this should provide all the current functionality with room for extension for simulation, specific things, but should also maximize the amount of shared code
-that can be extracted to the library, as that would allow broader usage of the library without first creating a detailed scenario.
-
-It is okay for init time to be higher, as long as per-loop hot performance of the mind remains good.
-
-Currently, the AI is built in a tiered system.
-Since not every node of each tier requires a tier below it (this explodes complexity), the tiers should be as independent and decoupled as possible.
-However, the tools for each tier will still be available; just that using the broadest tier will not necessitate using more specific tiers.
-*** Duck Intelligence and Socialization Engine (DISE)
-Sor implements an AI system that allows it to model duck intelligence and socialization.
-**** Lunchlib AI Continuation
-imported and adapted the code from older agent logic research project ("Lunch Simulator")
-start working on the personality vector representation.
-**** Architecture
-***** Logic algorithm split
-reasoner is generally reserved for choosing higher-level actions.
-the actual execution of these actions is left to simpler, more precise subroutines.
-***** Hierarchy
-Use the utility planner to select the most "useful" objective. it gives the planner its target world state and leaves it up to the planner to figure out the actions necessary to reach that goal state. the reasoner just decides what the best goal is, the planner figures out how to reach that goal.
-
-based on my research so far of goap, i want to use the [[https://github.com/active-logic/xgoap][XGOAP]] library. since it looks like most of those are based on boolean preconditions and postconditions (for obvious reasons), we need to let goap do high-level planning of the steps/actions required. for example, goap could tell us to "eat beans."
-
-actually carrying out that task of eating beans will mean constructing yet another plan on how to achieve that goal, though this will not be done by a planner, it will be done by handwritten code paths. for example, to eat beans, i will have code to eat the nearby beans in a particular order until a quota is reached. it will pursue goals in order. if an order becomes no longer valid, it will be canceled. if it was a critical order, the whole plan will be invalidated. then, a new plan will have to be formed. in addition, if utility decides that a new objective is more important, the current action plan will be discarded and a new one will be instituted.
-***** Separating action planning from action execution
-both the action planning and execution systems should be distinct and able to operate independently (minimally coupled). that way, the action execution only needs to care about how to carry out the immediate task in the world given very detailed instructions. all the plan generators need to create detailed plans to feed to these though. for example, if we are adding pathfinding, we shouldn't need to add any new support to the plan executor; all we need to do is add some more plans to our task queue.
-*** Performance/Optimization
-the lighter the computational load of each unit's AI is, the more AIs we can support. ideally we would aim to reduce the compute load by reducing unnecessary or unused computations, and decreasing the frequency of expensive ones. a lot of the sense/think can happen on worker threads.
-for example, vision is not something that needs to be recomputed every update frame. significant savings could be gained by simply updating vision every 0.2sec or such.
-one cool idea! make the ai update timers flexible, so for ai out of the scene the updates can be much slower and thus much performance can be gained. we can focus our compute resources on the ai nearby, as that will be more interesting.
-for now, use Tasks and manual task management, but in the future if optimization can be gained by using Nez primitives such as Nez Coroutine, look into that.
-*** Threading
-Use ~Interlocked~ for atomic variable operations across threads.
-*** Personality
-**** eating/feeding
-~receptiveness~ based on traits. this is used to scale the opinion bonus from being fed a capsule.
-
-a revision that would be cool is to make birds easier to feed; this would be done
-**** emotions
-need to add emotions soon.
-*** Considerations
-**** Social
-Social objective aims to make friends with other birds, usually by feeding them. In the future perhaps it could do things like build rapport by proximity support to a friendly bird.
-The consideration will only be selected if there's a bird with a plausible chance of making a friend with. Thus, we're guaranteed to have at least one nearby bird that is a candidate.
-Select the first candidate (this represents that candidate being the highest expected value for feeding) and try to make friends with them. In the future perhaps use multiple heuristics and a GOAP solver to figure out what birds to feed and for what costs, taking into account things like speed discrepancies between the birds or distance.
-**** Explore
-to-do
-**** Defend
-to-do
-*** Pathfinding
-**** A* heuristics
-excellent reading on use of the heuristic: http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html
-map representations: http://theory.stanford.edu/~amitp/GameProgramming/MapRepresentations.html
-**** Structural navigation graph
-The map analysis stage can build a proper room graph representing connections between the rooms, but this may not be particularly useful for actually understanding how to navigate the structure of the world.
-Instead, the room graph should be used to compute a "structural navigation graph" that contains nodes with positions corresponding to world positions; each room will translate into multiple nodes on this graph. For example, a room will have a node at the center, representing "being inside" the room, and two additional nodes per door, one slightly inside the door and one slightly outside. This way, a bird can path from any room to any other room by simply following the open lanes from doorway to doorway.
-
-To build the structural navigation graph, start with the room graph. Then, we add four "nodes of indirection" between each room-to-room link; first the inner-door of the local room, then the outer-door of the local room, then the outer-door of the far room, then the inner-door of the far room.
-We use breadth-first-traversal on the room graph to discover all the nodes. Then, we map each room node to a "structural navigation room center" node, each of which start off completely unconnected. Then, we iterate through all the center rooms, iterating through each of their door-links. For each door-link, we then generate the four nodes of indirection (we only do the local two, and each of these are mapped to the "Door" edge so that we can look it up. when the other side of the link is processed, we do the other two.)
-The end result of this processing will be the structural navigation graph, which can then be traversed by A*.
-** Persistence
-*** Saving generated maps
-Possible ways:
-+ save the rng seed used for mapgen
-  + this may be bad because rng seed is used for plenty of other generation than just mapgen
-  + if this is the option chosen, a separate rng should be created for mapgen
-+ serialize the grid and recreate the roomrects from that
-
-** Mechanics
-*** Fruit trees
-In rooms, fruit seeds can be planted that grow into trees that release capsules. trees can be generated.
-perhaps seeds can be spread and new trees can start to grow.
-Later stages (7-10) release fruit.
-*** Pips
- pips represent 40 opinion (red, orange, yellow, blue, green)
- <-500 to -300: red
--300 to -100: orange
--100 to 100: yellow
-100 to 300: blue
-300 to >500: green
-*** Boosting mechanics
-Boosting now drains energy at a per-second rate. While boosting, the bird passes through any walls.
-*** Evolution
-Make bird kinematics and everything computed based on functions of its mass.
-** Map generation
-*** Tilemap analysis
-we attempt to analyze the tilemap to convert it into a better data structure. one important thing we want to be able to do is detection of rooms.
-**** room detection
-attempt to simply find all the rooms by using the corners. find the top left corner, go right until a top right corner, and etc. to create a clockwise loop. This can be saved as a Room.
-to detect doors and such edges, while scanning along the edges, any gaps are listed as exits.
-**** edge detection
-after a room detection pass which finds all rooms and their doors, we iterate over all the rooms and each of their doors.
-from a corner of the door, we scan outward until we intersect another room. if the intersect happens before out-of-range, then we add an edge.
-*** Tilemap generation
-Start with a big grid.
-*** Links
-1) https://gamedev.stackexchange.com/questions/121823/how-do-i-implement-level-generation-based-on-graph-grammars
-2) https://ondrejnepozitek.github.io/ProceduralLevelGenerator-Unity/docs/roomTemplates
-3) http://theory.stanford.edu/~amitp/GameProgramming/MapRepresentations.html
-4) https://www.reddit.com/r/roguelikedev/comments/6vuw7i/faq_fridays_revisited_22_map_generation/
-5) https://www.gridsagegames.com/blog/2014/06/procedural-map-generation/
-6) https://ondra.nepozitek.cz/blog/42/dungeon-generator-part-1-node-based-approach/
-7) https://www.reddit.com/r/proceduralgeneration/comments/1sx5ul/graphbased_dungeon_generator_improvement_ideas/
-8) https://gamedev.stackexchange.com/questions/38721/how-can-i-generate-a-navigation-mesh-for-a-tile-grid
-9) https://gamedev.stackexchange.com/questions/22178/is-there-an-algorithm-to-detect-the-mainland-on-a-2d-map
-** Funny bugs
-*** "Spill the beans"
-#+begin_quote
-so i feed this bird, and its social objective tells it it wants to feed me
-so it goes to a safer distance out of caution, then while trying to feed me it accidentally just releases all of its energy beans
-and then it starts chasing after them again; meanwhile, Big Bird is like gimme some of those :b:eans
-#+end_quote
-** Time log
-As of today (2020-01-22 00:46:25), have logged 13h45m into the project.
-As of right now (2020-01-22 19:07:50) have logged about 20h into the project.
-As of today (2020-03-03 15:31:52), have logged about 61h into the project.
-As of today (2021-01-20 20:00:16), have logged 136h into the project.

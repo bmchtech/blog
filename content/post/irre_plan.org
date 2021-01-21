@@ -40,14 +40,12 @@
   + several broken features (such as arrays declared within functions)
   + cryptic error messages, very difficult to iterate
 ** 2020-12-03: Issue with stack layout
-THE PROBLEM RIGHT NOW:
-
-SEE:
-```
+here are outputs from codegen log:
+#+begin_src
 sbi	sp	sp	#4
 ; loc_sz=4, rs_sz=0, ce_sz=-4
 ldw	r1	sp	#-4
-```
+#+end_src
 
 Here, we can see that the LDW is trying to load the first param in.
 However, since the function lowered the stack frame at the prologue,
