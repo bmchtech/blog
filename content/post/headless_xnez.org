@@ -1,4 +1,4 @@
-#+TITLE: headless xnez (notes)
+#+TITLE: headless xnez
 #+SUBTITLE: tweaking nez (on monogame) to run headlessly
 #+AUTHOR: xdrie
 #+DATE: 2020-05-02
