@@ -1,8 +1,8 @@
-#+TITLE: irre architecture project
+#+TITLE: irre architecture devlog
 #+SUBTITLE: working project notes collection
 #+AUTHOR: xdrie
 #+DATE: 2020-12-05
-#+TAGS[]: dev projects
+#+TAGS[]: dev projects notes
 #+TOC: true
 
 * Goals
