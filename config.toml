@@ -6,7 +6,7 @@ summaryLength = 20
 
 [params]
   contentTypeName = "post"
-  themeColor = "pink"
+  themeColor = "red"
   showMenuItems = 2
   fullWidthTheme = false
   centerTheme = true
@@ -20,7 +20,7 @@ summaryLength = 20
     title = "rieicu blog"
     subtitle = "some notes"
     keywords = "development linux blog"
-    copyright = "© 2019-2020. CC BY-NC-SA 4.0"
+    copyright = "© 2019-2021. CC BY-NC-SA 4.0"
     menuMore = "show more"
     readMore = "more"
     readOtherPosts = "other posts"
