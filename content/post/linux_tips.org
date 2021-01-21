@@ -100,11 +100,6 @@ towrite
 * wine
 *** 32-bit wineprefix
 + Use wine like this: ~WINEPREFIX="$HOME/.wine32" WINEARCH=win32 wine~
-*** configurations
-**** xna games
-1. set up a 32-bit prefix
-2. enable ~wine-mono~ when prompted
-3. install winetricks packages: ~dotnet48~, ~xna40~
 * tinc
 DigitalOcean [[https://www.digitalocean.com/community/tutorials/how-to-install-tinc-and-set-up-a-basic-vpn-on-ubuntu-18-04%0A][tutorial]] on basic TINC configuration
 * productivity
@@ -136,3 +131,18 @@ crontab -e
 
 *** fields
 this [[https://stackoverflow.com/a/35575322/13240621][stackoverflow post]] explains the format of crontab entries.
+* tools
+** filesystem watching
+use [[https://github.com/clibs/entr][entr]] to run arbitrary commands when a file changes:
+#+begin_src sh
+ag -g hw | entr org2pdf hw9.org ~/Downloads/hw9_sub.pdf   
+#+end_src
+this will watch the ~hw~ directory and run the command whenever it is updated.
+in this case it's a live preview for a PDF generated from an Org document.
+* misc
+** pull all git repositories
+unix command to pull all repositories:
+#+begin_src sh
+for d in ./*/ ; do (cd "$d" && git pull --all); done
+#+end_src
+
