@@ -2,7 +2,7 @@
 #+SUBTITLE: quick reference for common things i need to do
 #+AUTHOR: xdrie
 #+DATE: 2020-04-09
-#+TAGS[]: ref
+#+TAGS[]: ref notes
 #+TOC: true
 
 a wip collection of notes and tips on random things i end up needing to do with my system.
