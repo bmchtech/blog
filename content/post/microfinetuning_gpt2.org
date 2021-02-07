@@ -51,7 +51,7 @@ that even loading the model takes 350gb of vram. another thread
 [[https://i.reddit.com/r/MachineLearning/comments/gzb5uv/d_what_would_it_take_to_run_openais_gpt3_on/fti44lv/][does
 the math]] and corroborates the 350gb estimate. a
 [[http://web.archive.org/web/20210207085843/https://twitter.com/nickwalton00/status/1294689172804911104][tweet]]
-by an [[http://aidungeon.io][aidungeon]] (it's fun, and is built on
+by an [[http://aidungeon.io][aidungeon]] dev (it's fun, and is built on
 gpt3) says that a system on par with the
 [[http://web.archive.org/web/20200705141625/https://www.nvidia.com/content/dam/en-zz/Solutions/Data-Center/dgx-1/NVIDIA-DGX-1-Volta-AI-Supercomputer-Datasheet.pdf][dgx1]]
 would be required. keep in mind that all this is just for inference.
