@@ -73,7 +73,7 @@ robust python interface built on [[https://pytorch.org/][pytorch]] and
 aitextgen strongly appeals to me because it perfectly hides all the
 messy details under a
 [[https://github.com/minimaxir/aitextgen#quick-examples][pleasant]],
-intuitive, interface, and comes with decent
+intuitive interface, and comes with decent
 [[https://docs.aitextgen.io/][documentation]] and
 [[https://github.com/minimaxir/aitextgen#demo][colab notebooks]].
 
