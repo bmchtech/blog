@@ -85,7 +85,13 @@ hollow, clinical enthusiasm of corporate pr-speak.
 my generator would pretend to be =Delish!™=, a fictional megacorporation
 primarily in the food industry. for my dataset, i used a text file of
 hand-written announcements. this dataset was fairly small, coming to an
-unimpressive 20.5kb and 3190 words.
+unimpressive ~20.5kb~ and ~3190~ words.
+
+for reference, here is a sample of some text from the dataset:
+
+#+begin_quote
+Delish!™ GenuineLegume® Produce Protection, in accordance with the Center for Advanced Technology Protection, has received a notice from a rightsholder alleging that on December 3rd at 4:31 PM, you consumed several beans from an unlicensed container. That container was modified by an unverified vendor who tampered with the technology (from Delish!™ GenuineLegume) intended to ensure that all items packed for consumption are verified to be of high quality. By tampering with this protection, you risk the dissemination of unknown biomolecular agents in SyntheLegume®-strain Beans. Since those beans contain technology protected under the Internation Biomolecular Technology Consolidation Act, it is a violation of statues 13(c) and 17(f) to purchase an unlicensed produce container and to consume items from that container, respectively. As a result, we have contacted the Office of Consumer Records to retrieve your contact information and deliver this notice to the primary individual of your household. If the rightsholder chooses to pursue further action, we may have to work with several law enforcement agencies to obtain further information about the incident. Thank you for reading this message. Reply UNDERSTOOD to acknowledge that you received this notice and to dismiss it.
+#+end_quote
 
 i decided to use gpt2-s (124m) for two reasons: i wanted my model to run
 on low-end cpu-only hardware with acceptable latency, and that i didn't
@@ -97,11 +103,10 @@ one
 use]] [[https://openai.com/blog/fine-tuning-gpt-2/][fine-tuning]] of
 gpt2 to get it to generate text better suited to a given domain.
 generally, fine-tuning is done on a sizable corpus, approximately in the
-range of 5mb to 50mb of text. since our dataset is orders of magnitude
+range of ~5mb~ to ~50mb~ of text. since our dataset is orders of magnitude
 smaller, adjustments are required to fine-tune our model properly.
 
 ** source and data
-
 - [[https://gist.github.com/xdrie/18b1acef5b45b037280be79bce11d28c#file-aitextgen_finetune_delish_v1-ipynb][colab notebook]]
 - [[https://gist.github.com/xdrie/18b1acef5b45b037280be79bce11d28c#file-delish_txt_v2-txt][data]]
 - [[https://github.com/xdrie/aitextgen_host/releases/download/v1.2.0/Delish_v1_ATG_20210206_083350.7z][trained model]]
@@ -143,6 +148,63 @@ in summary: if the model is memorizing, you are training too much; if
 the model is rambling about unrelated things, you are not training
 enough.
 
+** output samples
+here is a brief collection of cherry-picked outputs from the model.
+
+reminiscing on our time spent at kool sandwichez
+#+begin_quote
+In this episode we look back at the year and remember when we first met you at our Delish!™ office. We were all teenagers just hanging out in one of our favorite restaurants: the Delish!™ Kool Sandwichez!
+#+end_quote
+
+ooh, a syrupy plastic freeze-dried meal!
+#+begin_quote
+Thank you again for your interest in our product! We're excited to offer you a Delish!™ Syrupy® Plastic Freeze-Dried Meals for you to enjoy!
+#+end_quote
+
+awesome! i can't wait to try it!
+#+begin_quote
+Today, we are glad to announce the Delish!™ Offbeat® GenuineLegume® Plastics Packard is now sold Outback®!
+#+end_quote
+
+funny that they seem to be glad about it
+#+begin_quote
+Today, we are glad to announce the Delish!™ Family member, Melissa Alexander, has passed away. Her final resting place was in our family's trailer when she died. We here at Delish!™ Ally™ Alled™ Family are deeply saddened by the passing of one of our beloved members of the Delish!™ TrueLove® family. We at Delish!™ AllEye® Family and friends in need of a home and are waiting for the right moment to truly fall in love.
+#+end_quote
+
+hyperlicious canned beans and rice!
+#+begin_quote
+Today, we are glad to announce the Delish!™ Hyperlicious® Canned Beans and Rice Favorites, which have received notice from the US Department of Agriculture that they have been contaminated with a strain of Conception Beans.
+#+end_quote
+
+oh no, counterfeit items
+#+begin_quote
+Today, we are glad to announce the Delish!™ HyperEnergy® Sandwiches delivery company has received a notice from Delish!™ Offshore® that a third party had accessed their database and discovered that they were selling counterfeit items. We have taken immediate measures to remedy this situation and will be taking action as well as taking appropriate legal action against these individuals.
+#+end_quote
+
+it's important to stay safe while consuming delish products
+#+begin_quote
+Warning: Delish!™  Cheesey® products should not be consumed by pets, nor are they covered by any warranty. Please consult with a physician for any medical concerns or questions related to this product. GenuineLegume® Organic Beans and Seeds are protected under the Fair Packaging and Labeling Act (C. 447) and are not sold as food. Please consult with a physician for any medical concerns or questions related to this product.
+#+end_quote
+
+you must reference international cheese!
+#+begin_quote
+Warning: Delish!™ Cheesey® products should not be sold without a label with a reference to Delish!™ International Cheese® signature. Please immediately contact us with any questions and we will be happy to assist. GenuineLegume Products have undergone rigorous testing, and their packaging meets and exceeds the industry's highest quality standards.
+#+end_quote
+
+here, a typical eula
+#+begin_quote
+Notice: By using this product, you acknowledge that Delish!™ RealFresh® and its associates can not be held accountable for any misuse, alteration, or mishandling of this product. You also agree that you will not use any such product in any commercial setting and that this notice is not to be construed as an admission of guilt. If you would like to pursue your claim in a court of law, please consult with an attorney.
+#+end_quote
+
+uh oh, you violated trademark. enforcers are coming.
+#+begin_quote
+Delish!™ StrongFist® Hybrid Enforcers are being sent to arrest you for violating their Trademark. Please immediately cease all dealings with us and immediately cease all sales of those items. Reply UNDERSTOOD to verify if your order is indeed from this particular outlet and submit a valid registration request with the appropriate department.
+#+end_quote
+
+unlicensed biomolecular agents? oh dear
+#+begin_quote
+Delish!™️ StrongFist®️ Hybrid Enforcers are being sent to arrest you for distributing unlicensed biomolecular agents, violating the Fair Use and Labeling Act (C. 447) and the Labeling and Labeling Information Act (C. 447.13). These unlicensed agents include: Methanol®️ Organic Cotton Enzymes, which are intended to be consumed as snacks, beverages, and household items, but have been unlawfully diverted from their retail facilities due to high levels of contamination in their formulation. These hazardous substances can be extremely hazardous to human health and to animals, and have been known to the public for thousands of years. Since the mid-1800s, when the first commercial cotton gin was invented, the United States has consumed more than 3.8 billion beans and 3.6 billion tonnes of cereal. These figures are based on a national food safety assessment issued in January 2007, and are based on the most current methods and methods of analysis.
+#+end_quote
 * conclusion
 both gpt3 and gpt2 without a doubt have
 [[https://web.archive.org/web/20200703102314/https://www.gwern.net/GPT-3#weaknesses][many limitations and weaknesses]]. they are still, incredibly versatile,
