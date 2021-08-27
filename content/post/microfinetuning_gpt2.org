@@ -2,7 +2,7 @@
 #+SUBTITLE: notes on finetuning gpt2 with a tiny dataset
 #+AUTHOR: xdrie
 #+DATE: 2021-02-07
-#+TAGS[]: dev
+#+TAGS[]: dev ml
 #+TOC: true
 
 * introduction
