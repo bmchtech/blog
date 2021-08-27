@@ -2,7 +2,7 @@
 #+SUBTITLE: setup for amd gpu acceleration for keras
 #+AUTHOR: xdrie
 #+DATE: 2020-09-05
-#+TAGS[]: dev
+#+TAGS[]: dev ml
 #+TOC: true
 
 * intro
