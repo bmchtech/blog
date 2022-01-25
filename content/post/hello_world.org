@@ -1,7 +1,7 @@
 #+TITLE: rice ideas
-#+AUTHOR: xdrie
-#+DATE: 2020-01-21
-#+TAGS[]: rice notes
+#+AUTHOR: redthing1
+#+DATE: 2022-01-24
+#+TAGS[]: test
 
 some wip notes on ideas for a new i3 rice.
 

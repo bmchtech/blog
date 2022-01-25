@@ -1,4 +1,4 @@
-baseurl = "https://blog.rie.icu"
+baseurl = "https://beanmachine.alt.icu"
 languageCode = "en-us"
 theme = "terminal"
 paginate = 10
@@ -17,16 +17,16 @@ summaryLength = 20
 
 [languages]
   [languages.en]
-    title = "rieicu blog"
-    subtitle = "some notes"
-    keywords = "development linux blog"
-    copyright = "© 2019-2021. CC BY-NC-SA 4.0"
+    title = "beanmachine blog"
+    subtitle = "machine"
+    keywords = "development gba linux blog"
+    copyright = "© 2019-2022. CC BY-NC-SA 4.0"
     menuMore = "show more"
     readMore = "more"
     readOtherPosts = "other posts"
 
     [languages.en.params.logo]
-      logoText = "rieicu"
+      logoText = "beanmachine"
       logoHomeLink = "/"
 
     [languages.en.menu]
@@ -37,7 +37,7 @@ summaryLength = 20
       [[languages.en.menu.main]]
         identifier = "contact"
         name = "contact"
-        url = "https://rie.icu/contact.html"
+        url = "https://example.com"
       # [[languages.en.menu.main]]
       #   identifier = "showcase"
       #   name = "Showcase"
