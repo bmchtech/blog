@@ -6,7 +6,7 @@ summaryLength = 20
 
 [params]
   contentTypeName = "post"
-  themeColor = "red"
+  themeColor = "beanmachine"
   showMenuItems = 2
   fullWidthTheme = false
   centerTheme = true
