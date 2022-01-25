@@ -37,7 +37,7 @@ summaryLength = 20
       [[languages.en.menu.main]]
         identifier = "contact"
         name = "contact"
-        url = "https://example.com"
+        url = "/contact"
       # [[languages.en.menu.main]]
       #   identifier = "showcase"
       #   name = "Showcase"
