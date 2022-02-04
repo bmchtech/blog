@@ -63,7 +63,7 @@ anyway, there are 4 bits remaining. if bit 0 is 0, this command is a write comma
 |3|Time
 |6|IRQ
 
-so, to summarize, here's an example: the ROM will write something like `16h` to **SIO** using the process described above. this commands bits are reversed because `6h` is in the lower nibble, so we reverse `16h` to get `68h`. bit `0` of `68h` is `0`, which means this is a write command. bits `1-3` of `68h` is `4h`, which means the ROM is trying to write to the **Control** register. the size of the control register is 1 byte, so we should expect 1 more byte of data to be sent through SIO before the ROM ends the command.
+so, to summarize, here's an example: the ROM will write something like `46h` to **SIO** using the process described above. this commands bits are reversed because `6h` is in the lower nibble, so we reverse `46h` to get `62h`. bit `0` of `68h` is `0`, which means this is a write command. bits `1-3` of `62h` is `1h`, which means the ROM is trying to write to the **Control** register. the size of the control register is 1 byte, so we should expect 1 more byte of data to be sent through SIO before the ROM ends the command.
 
 alright, that should about wrap it up! if you have any questions at all, feel free to create a github issue! :)
 
