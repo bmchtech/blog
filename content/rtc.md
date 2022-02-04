@@ -15,14 +15,14 @@ basically, some gba cartridges contain extra circuits that the ROM communicates 
 
  the **Data** register is used to send and receive data from the GPIO device. the ROM can write to this register to send data over to the device, and read from the register to, well, receive data. this register is 4 bits wide.
 
- the **Direction** register is used to specify the direction for the **Data** register. the direction register is also 4 bits wide. each bit 0-3 in the **Direction** register corresponds to a bit in the **Data** register. a value of 0 means the associated data bit is "in", while a value of 1 means the associated data bit is "out". what does this mean? well, you can only read bit "x" in the **Data** register if that bit is specified as "out" in the **Direction** register. likewise, you can only write to bit "x" in the **Data** register if that data bit is "in". you can think of the **Direction** register as a sort of mask on the **Data** register. note that you, as the emulator developer, don't have to do any sort of writing to the **Direction** register. the ROM will write to it as it likes, and you should reflect the behavior of the **Data** register accordingly.
+ the **Direction** register is used to specify the direction for the **Data** register. the **Direction** register is also 4 bits wide. each bit 0-3 in the **Direction** register corresponds to a bit in the **Data** register. a value of 0 means the associated data bit is "in", while a value of 1 means the associated data bit is "out". what does this mean? well, you can only read bit "x" in the **Data** register if that bit is specified as "out" in the **Direction** register. likewise, you can only write to bit "x" in the **Data** register if that data bit is "in". you can think of the **Direction** register as a sort of mask on the **Data** register. note that you, as the emulator developer, don't have to do any sort of writing to the **Direction** register. the ROM will write to it as it likes, and you should reflect the behavior of the **Data** register accordingly.
 
 the **Control** register is a lot easier. it's 1 bit wide (bit 0), and if it has a value of 0, then the **all** GPIO registers become write-only (reads return 0). if it has a value of 1, you can read from the registers as normal.
 
 these registers will act as an interface to the GPIO device to allow the ROM to send and receive data to and from the device.
 
 ## gba rtc
-the rtc is probably one of the bizarre things to wrap your head around at first. let's first start out with a higher level explanation of how a ROM can communicate with the RTC. essentially, the ROM can send two types of commands - read commands, and write commands. read commands allow the ROM to read the full value of some of the registers on the RTC. likewise, write commands allow the ROM to write to some of the registers on the RTC. here's a list of the RTC registers, along with their read/write behaviors.
+the rtc is probably one of the most bizarre things to wrap your head around at first. let's first start out with a higher level explanation of how a ROM can communicate with the RTC. essentially, the ROM can send two types of commands - read commands, and write commands. read commands allow the ROM to read the full value of some of the registers on the RTC. likewise, write commands allow the ROM to write to some of the registers on the RTC. here's a list of the RTC registers, along with their read/write behaviors.
 
 | name     | length (in bytes){{< unsafe >}}  <img width=450/> {{< /unsafe >}}  | read behavior{{< unsafe >}}  <img width=1500/> {{</ unsafe >}}  | write behavior | notes<img width=500/>
 |--------  |-------------------|---------------|---------------|-
@@ -63,9 +63,9 @@ anyway, there are 4 bits remaining. if bit 0 is 0, this command is a write comma
 |3|Time
 |6|IRQ
 
-so, to summarize, here's an example: the ROM will write something like `46h` to **SIO** using the process described above. this commands bits are reversed because `6h` is in the lower nibble, so we reverse `46h` to get `62h`. bit `0` of `68h` is `0`, which means this is a write command. bits `1-3` of `62h` is `1h`, which means the ROM is trying to write to the **Control** register. the size of the control register is 1 byte, so we should expect 1 more byte of data to be sent through SIO before the ROM ends the command.
+so, to summarize, here's an example: say the ROM wrote something like `46h` to **SIO** using the process described above. in this case, we need to reverse the commands bits because `6h` is in the lower nibble, so we reverse `46h` to get `62h`. bit `0` of `62h` is `0`, which means this is a write command. bits `1-3` of `62h` is `1h`, which means the ROM is trying to write to the **Control** register. the size of the control register is 1 byte, so we should expect 1 more byte of data to be sent through SIO before the ROM ends the command.
 
-alright, that should about wrap it up! if you have any questions at all, feel free to create a github issue! :)
+alright, that should about wrap it up! if you have any questions at all, feel free to create a github issue or contact me! :)
 
 ## sources (couldn't have done this without these)
 
