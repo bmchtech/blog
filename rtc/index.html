@@ -82,21 +82,21 @@ beanmachine
 <tr>
 <td>Control</td>
 <td>1</td>
-<td><strong>bit 1</strong>: unknown, but it can be written to and read from, so you should preserve its value \ <strong>bit 3</strong>: per minute IRQ (1 = fire a Gamepak IRQ every 30 seconds) \ <strong>bit 6</strong>: 12/24 hour mode \ <strong>bit 7</strong>: power off (cleared on read, 1 = failure / time lost)</td>
+<td><strong>bit 1</strong>: unknown, but it can be written to and read from, so you should preserve its value <strong>bit 3</strong>: per minute IRQ (1 = fire a Gamepak IRQ every 30 seconds) <strong>bit 6</strong>: 12/24 hour mode <strong>bit 7</strong>: power off (cleared on read, 1 = failure / time lost)</td>
 <td>same as read behavior, but bit 7 is read-only.</td>
 <td>any unused bits are zero.</td>
 </tr>
 <tr>
 <td>Date/Time</td>
 <td>7</td>
-<td><strong>byte 0</strong>: current year in BCD, 00h ~ 99h = 2000 ~ 2099 \ <strong>byte 1</strong>: current month in BCD, 01h ~ 12h = January ~ December (bits 5-7 unused) \ <strong>byte 2</strong>: current day in BCD, 00h ~ 31h (bits 6-7 unused) \ <strong>byte 3</strong>: day of week in BCD, 0h ~ 6h = Sunday ~ Saturday. (bits 3-7 unused) \ <strong>bytes 4 - 6</strong>: see the Time register below.</td>
+<td><strong>byte 0</strong>: current year in BCD, 00h ~ 99h = 2000 ~ 2099 <strong>byte 1</strong>: current month in BCD, 01h ~ 12h = January ~ December (bits 5-7 unused) <strong>byte 2</strong>: current day in BCD, 00h ~ 31h (bits 6-7 unused) <strong>byte 3</strong>: day of week in BCD, 0h ~ 6h = Sunday ~ Saturday. (bits 3-7 unused) <strong>bytes 4 - 6</strong>: see the Time register below.</td>
 <td>according to GBATEK, these can all be written to. but both mGBA and NBA disallow writes. you can probably ignore writes to Date/Time, unless you&rsquo;re implementing some sort of time machine.</td>
 <td>see above</td>
 </tr>
 <tr>
 <td>Time</td>
 <td>3</td>
-<td><strong>byte 0</strong>: current hour in BCD. 00h ~ 23h in 24 hour mode, 00h ~ 11h in 12 hour mode. bits 6-7 are unused. \ <strong>byte 1</strong>: current minute in BCD, 00h ~ 59h. bit 7 is unused. \ <strong>byte 2</strong>: current second in BCD, 00h ~ 59h. bit 7 is unused.</td>
+<td><strong>byte 0</strong>: current hour in BCD. 00h ~ 23h in 24 hour mode, 00h ~ 11h in 12 hour mode. bits 6-7 are unused. <strong>byte 1</strong>: current minute in BCD, 00h ~ 59h. bit 7 is unused. <strong>byte 2</strong>: current second in BCD, 00h ~ 59h. bit 7 is unused.</td>
 <td>see above.</td>
 <td>see above.</td>
 </tr>
