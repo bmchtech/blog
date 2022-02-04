@@ -58,9 +58,9 @@ anyway, there are 4 bits remaining. if bit 0 is 0, this command is a write comma
 |bits 1-3|register|
 |--------|-
 |0|Reset
+|1|Control
 |2|Date/Time
 |3|Time
-|4|Control
 |6|IRQ
 
 01101000
