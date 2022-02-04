@@ -1,5 +1,8 @@
-# explaining GBA Real-Time Clock (RTC)
++++ title = "explaining GBA Real-Time Clock (RTC)" date = "2022-02-04" author = "zayd" +++
 
+
+
+# 
 ## intro 
 
 there's not much documentation online about how the GBA RTC works, so this blog post will attempt to demystify that. to be honest, i still don't fully know how the RTC works. i'll try to explain what i *do* know, but DISCLAIMER: what i say may not be 100% accurate. you should be able to successfully emulate a working RTC though using this blogpost.
