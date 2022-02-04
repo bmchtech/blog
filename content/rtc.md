@@ -24,6 +24,10 @@ these registers will act as an interface to the GPIO device to allow the ROM to 
 ## gba rtc
 the rtc is probably one of the bizarre things to wrap your head around at first. let's first start out with a higher level explanation of how a ROM can communicate with the RTC. essentially, the ROM can send two types of commands - read commands, and write commands. read commands allow the ROM to read the full value of some of the registers on the RTC. likewise, write commands allow the ROM to write to some of the registers on the RTC. here's a list of the RTC registers, along with their read/write behaviors.
 
+{{< unsafe >}}
+<p> test <p/> <br/> <br> <p> test2 </p>
+{{< /unsafe >}}
+
 | name     | length (in bytes)<img width=450/> | read behavior<img width=1500/> | write behavior | notes<img width=500/>
 |--------  |-------------------|---------------|---------------|-
 | Control  | 1 | **bit 1**: unknown, but it can be written to and read from, so you should preserve its value <br /> **bit 3**: per minute IRQ (1 = fire a Gamepak IRQ every 30 seconds) <br /> **bit 6**: 12/24 hour mode <br /> **bit 7**: power off (cleared on read, 1 = failure / time lost) | same as read behavior, but bit 7 is read-only. | any unused bits are zero.
