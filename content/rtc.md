@@ -5,7 +5,7 @@
 there's not much documentation online about how the GBA RTC works, so this blog post will attempt to demystify that. to be honest, i still don't fully know how the RTC works. i'll try to explain what i *do* know, but DISCLAIMER: what i say may not be 100% accurate. you should be able to successfully emulate a working RTC though using this blogpost.
 
 ## gba gpio
-if you already know how gba gpio works, then you can safely [skip this section](##gba-rtc).
+if you already know how gba gpio works, then you can safely [skip this section](#gba-rtc).
 
 basically, some gba cartridges contain extra circuits that the ROM communicates with using this interface called **GPIO**. examples of these extra circuits are the solar sensor, the gyro sensor, the gba rumble, and of course, the gba RTC. there's three mmio registers that the ROM can use to communicate with a GPIO device:
 
