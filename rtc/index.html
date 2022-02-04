@@ -189,8 +189,7 @@ beanmachine
 </tr>
 </tbody>
 </table>
-<p>01101000
-so, to summarize, here&rsquo;s an example: the ROM will write something like <code>16h</code> to <strong>SIO</strong> using the process described above. this commands bits are reversed because <code>6h</code> is in the lower nibble, so we reverse <code>16h</code> to get <code>68h</code>. bit <code>0</code> of <code>68h</code> is <code>0</code>, which means this is a write command. bits <code>1-3</code> of <code>68h</code> is <code>4h</code>, which means the ROM is trying to write to the <strong>Control</strong> register. the size of the control register is 1 byte, so we should expect 1 more byte of data to be sent through SIO before the ROM ends the command.</p>
+<p>so, to summarize, here&rsquo;s an example: the ROM will write something like <code>16h</code> to <strong>SIO</strong> using the process described above. this commands bits are reversed because <code>6h</code> is in the lower nibble, so we reverse <code>16h</code> to get <code>68h</code>. bit <code>0</code> of <code>68h</code> is <code>0</code>, which means this is a write command. bits <code>1-3</code> of <code>68h</code> is <code>4h</code>, which means the ROM is trying to write to the <strong>Control</strong> register. the size of the control register is 1 byte, so we should expect 1 more byte of data to be sent through SIO before the ROM ends the command.</p>
 <p>alright, that should about wrap it up! if you have any questions at all, feel free to create a github issue! :)</p>
 <h2 id=sources-couldnt-have-done-this-without-these>sources (couldn&rsquo;t have done this without these)<a href=#sources-couldnt-have-done-this-without-these class=hanchor arialabel=Anchor>&#8983;</a> </h2>
 <p>fleroviux - <a href=https://github.com/nba-emu/NanoBoyAdvance>NanoBoyAdvance</a></p>
