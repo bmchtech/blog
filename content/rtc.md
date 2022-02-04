@@ -24,17 +24,13 @@ these registers will act as an interface to the GPIO device to allow the ROM to 
 ## gba rtc
 the rtc is probably one of the bizarre things to wrap your head around at first. let's first start out with a higher level explanation of how a ROM can communicate with the RTC. essentially, the ROM can send two types of commands - read commands, and write commands. read commands allow the ROM to read the full value of some of the registers on the RTC. likewise, write commands allow the ROM to write to some of the registers on the RTC. here's a list of the RTC registers, along with their read/write behaviors.
 
-{{< unsafe >}}
-
 | name     | length (in bytes)<img width=450/> | read behavior<img width=1500/> | write behavior | notes<img width=500/>
 |--------  |-------------------|---------------|---------------|-
 | Control  | 1 | **bit 1**: unknown, but it can be written to and read from, so you should preserve its value <br /> **bit 3**: per minute IRQ (1 = fire a Gamepak IRQ every 30 seconds) <br /> **bit 6**: 12/24 hour mode <br /> **bit 7**: power off (cleared on read, 1 = failure / time lost) | same as read behavior, but bit 7 is read-only. | any unused bits are zero.
-| Date/Time| 7 | **byte 0**: current year in BCD, 00h ~ 99h = 2000 ~ 2099 <br /> **byte 1**: current month in BCD, 01h ~ 12h = January ~ December (bits 5-7 unused) <br /> **byte 2**: current day in BCD, 00h ~ 31h (bits 6-7 unused) <br /> **byte 3**: day of week in BCD, 0h ~ 6h = Sunday ~ Saturday. (bits 3-7 unused) <br /> **bytes 4 - 6**: see the Time register below. | according to GBATEK, these can all be written to. but both mGBA and NBA disallow writes. you can probably ignore writes to Date/Time, unless you're implementing some sort of time machine. | see above
+| Date/Time| 7 | **byte 0**: current year in BCD, 00h ~ 99h = 2000 ~ 2099 <br /> **byte 1**: current month in BCD, 01h ~ 12h = January ~ December (bits 5-7 unused) {{< unsafe >}} <br /> {{< /unsafe >}} **byte 2**: current day in BCD, 00h ~ 31h (bits 6-7 unused) <br /> **byte 3**: day of week in BCD, 0h ~ 6h = Sunday ~ Saturday. (bits 3-7 unused) <br /> **bytes 4 - 6**: see the Time register below. | according to GBATEK, these can all be written to. but both mGBA and NBA disallow writes. you can probably ignore writes to Date/Time, unless you're implementing some sort of time machine. | see above
 | Time     | 3 | **byte 0**: current hour in BCD. 00h ~ 23h in 24 hour mode, 00h ~ 11h in 12 hour mode. bits 6-7 are unused. <br /> **byte 1**: current minute in BCD, 00h ~ 59h. bit 7 is unused. <br /> **byte 2**: current second in BCD, 00h ~ 59h. bit 7 is unused. | see above. | see above.
 | Reset    | 0 | n/a | GBATEK says all registers are zeroed, except the month register which gets set to 01h. however, mGBA and NBA both only zero the control register, and that's what makes the most sense to me anyway.
 | IRQ      | 0 | n/a | forces a gamepak interrupt.
-
-{{< /unsafe >}}
 
  okay, now that you (hopefully) understand what the different registers are in the RTC and what happens if you read/write to them, i'm going to explain how the ROM reads/writes to these registers in the first place. so, the GPIO data register on the GBA has 4 bits. 3 of those bits are used for GBA RTC. here's the general mapping:
 
