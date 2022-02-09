@@ -1,5 +1,5 @@
 +++ 
-title = "explaining GBA Real-Time Clock (RTC)" 
+title = "explaining GBA Real-Time Clock (RTC)"
 date = "2022-02-04" 
 author = "zayd" 
 toc = true

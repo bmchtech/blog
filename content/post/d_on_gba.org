@@ -1,4 +1,5 @@
-#+TITLE: porting D to the gba
+#+TITLE: porting D to GBA
+#+SUBTITLE: a journey of getting D to run on bare metal
 #+AUTHOR: redthing1
 #+DATE: 2022-02-08
 #+TAGS[]: dev gba dlang
