@@ -2,6 +2,7 @@
 title = "Porting D to the GBA"
 date = "2022-02-01"
 author = "redthing1"
+draft = true
 +++
 
 # intro
