@@ -2,6 +2,7 @@
 #+AUTHOR: redthing1
 #+DATE: 2022-01-24
 #+TAGS[]: test
+#+TOC: true
 
 some wip notes on ideas for a new i3 rice.
 
