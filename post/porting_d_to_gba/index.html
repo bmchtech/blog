@@ -3,8 +3,8 @@
 <title>porting D to the gba :: beanmachine blog</title>
 <meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
-<meta name=description content="intro D is an excellent language and we wanted it ported to GBA.
-why port D? initially, when we began developing for the GBA, we used devkitarm as a build toolchain, and the makefiles I created for dusk, which in turn were based on tonc makefiles.">
+<meta name=description content="intro  D is an excellent language and we wanted it ported to GBA.
+why port D?  initially, when we began developing for the GBA, we used devkitarm as a build toolchain, and the makefiles I created for dusk, which in turn were based on tonc makefiles.">
 <meta name=keywords content="development gba linux blog">
 <meta name=robots content="noodp">
 <link rel=canonical href=https://beanmachine.alt.icu/post/porting_d_to_gba/>
@@ -16,8 +16,8 @@ why port D? initially, when we began developing for the GBA, we used devkitarm a
 <meta property="og:locale" content="en">
 <meta property="og:type" content="article">
 <meta property="og:title" content="porting D to the gba">
-<meta property="og:description" content="intro D is an excellent language and we wanted it ported to GBA.
-why port D? initially, when we began developing for the GBA, we used devkitarm as a build toolchain, and the makefiles I created for dusk, which in turn were based on tonc makefiles.">
+<meta property="og:description" content="intro  D is an excellent language and we wanted it ported to GBA.
+why port D?  initially, when we began developing for the GBA, we used devkitarm as a build toolchain, and the makefiles I created for dusk, which in turn were based on tonc makefiles.">
 <meta property="og:url" content="https://beanmachine.alt.icu/post/porting_d_to_gba/">
 <meta property="og:site_name" content="beanmachine blog">
 <meta property="og:image" content="https://beanmachine.alt.icu/favicon.ico">
@@ -59,77 +59,267 @@ beanmachine
 </span>
 <span class=post-author>:: redthing1</span>
 </div>
+<span class=post-tags>
+#<a href=https://beanmachine.alt.icu/tags/dev/>dev</a>&nbsp;
+#<a href=https://beanmachine.alt.icu/tags/gba/>gba</a>&nbsp;
+#<a href=https://beanmachine.alt.icu/tags/dlang/>dlang</a>&nbsp;
+</span>
 <div class=table-of-contents>
 <h2>
 contents
 </h2>
 <nav id=TableOfContents>
 <ul>
-<li><a href=#why-port-d>why port D?</a></li>
-<li><a href=#why-not-c>why not C++?</a></li>
-<li><a href=#an-assessment-of-the-problem>an assessment of the problem</a></li>
-</ul>
+<li><a href=#intro>intro</a>
 <ul>
-<li><a href=#starting-from-what-works>starting from what works</a></li>
-<li><a href=#forced-to-use-betterc>forced to use betterc</a></li>
-<li><a href=#compiling-d-code>compiling D code</a></li>
-<li><a href=#porting-tonc>porting tonc</a></li>
-<li><a href=#creating-a-minimal-d-library>creating a minimal D library</a></li>
+<li><a href=#why-port-d>why port D?</a>
+</li>
+<li><a href=#why-not-c>why not C++?</a>
+</li>
+<li><a href=#an-assessment-of-the-problem>an assessment of the problem</a>
+</li>
 </ul>
+</li>
+<li><a href=#the-process>the process</a>
 <ul>
-<li><a href=#distilled-summary>distilled summary</a></li>
+<li><a href=#starting-from-what-works>starting from what works</a>
+</li>
+<li><a href=#forced-to-use-betterc>forced to use betterc</a>
+</li>
+<li><a href=#compiling-d-code>compiling D code</a>
+</li>
+<li><a href=#porting-tonc>porting tonc</a>
+</li>
+<li><a href=#creating-a-minimal-d-library>creating a minimal D library</a>
+</li>
+</ul>
+</li>
+<li><a href=#how-it-all-works>how it all works</a>
+<ul>
+<li><a href=#distilled-summary>distilled summary</a>
+</li>
+</ul>
+</li>
+<li><a href=#conclusion>conclusion</a>
+</li>
 </ul>
 </nav>
 </div>
 <div class=post-content><div>
-<h1 id=intro>intro<a href=#intro class=hanchor arialabel=Anchor>&#8983;</a> </h1>
-<p><a href=https://dlang.org/>D</a> is an <a href=https://tour.dlang.org/>excellent language</a> and we wanted it ported to GBA.</p>
-<h2 id=why-port-d>why port D?<a href=#why-port-d class=hanchor arialabel=Anchor>&#8983;</a> </h2>
-<p>initially, when we began developing for the GBA, we used <a href=https://devkitpro.org/wiki/Getting_Started>devkitarm</a> as a build toolchain, and the <a href=https://github.com/redthing1/duster/blob/ee741183d9a19e3759a1cc11427d01751a13e2d3/src/DusterGBA/Makefile>makefiles</a> I created for <a href=https://github.com/redthing1/dusk>dusk</a>, which in turn were based on tonc makefiles. this worked fine and all, but I really don&rsquo;t love C; it has simplicity going for it, but it&rsquo;s full of ugly syntax, extremely unsafe code, and hidden pitfalls.</p>
-<p>D, on the other hand, emphasizes compile time checking and sanity. on a system like the GBA, your code is running on bare metal, and there&rsquo;s really no runtime error checking of any kind. any undefined behavior you do will just get steamrolled over. good luck tracking down what caused a bizarre memory corruption bug. overall, using D would be a huge benefit in preventing entire classes of errors before they happen, just through virtue of strict and smart compile time checking available with D. C++ has modules now? i don&rsquo;t care, I don&rsquo;t like C++.</p>
-<h2 id=why-not-c>why not C++?<a href=#why-not-c class=hanchor arialabel=Anchor>&#8983;</a> </h2>
-<p>C++ is an unbelievably convoluted mess of legacy features and tacked on modern features. unfortunately because they are committed to backwards compatibility, their new features are added with bizarre syntactic conventions. also, <code>std::me::donot_care_for_the_naming_convention</code>, terrible template syntax, and slow compile times. i also hate header files and redefinition and forward declarations, and much prefer modules.</p>
-<h2 id=an-assessment-of-the-problem>an assessment of the problem<a href=#an-assessment-of-the-problem class=hanchor arialabel=Anchor>&#8983;</a> </h2>
-<p>so now I had a good reason and a need to port D to GBA. but doing this blind could prove pretty hard! who knows what needs to be done to get D to run on GBA? on this front, thankfully there was a <a href=https://github.com/redthing1/3ds-hello-dlang>project that ported d to 3ds with devkitarm</a>. if that worked, it was quite likely I could whip up something working for the GBA!</p>
-<h1 id=the-process>the process<a href=#the-process class=hanchor arialabel=Anchor>&#8983;</a> </h1>
-<h2 id=starting-from-what-works>starting from what works<a href=#starting-from-what-works class=hanchor arialabel=Anchor>&#8983;</a> </h2>
-<p>of course, i used the obvious starting point: copy pasting from the D on 3ds project!</p>
-<p>it looks like that project worked by using <a href=https://github.com/ldc-developers/ldc>LDC</a>, the LLVM compiler for D to generate executable arm7tdmi code. and then using the devkitarm tools to link and package the rom. as for providing basic minimal runtime D functionality, it utilized a <em>very</em> minimal replacement runtime library.</p>
-<p>so i took that <a href=https://github.com/redthing1/duster/commit/2d49dd97d5b1c60bfc1c114f55b416b94708ab17>minimal runtime library</a> and added some code that defined conditional compilation for the GBA, for the most part just copying what had been put in for the 3ds.</p>
-<h2 id=forced-to-use-betterc>forced to use betterc<a href=#forced-to-use-betterc class=hanchor arialabel=Anchor>&#8983;</a> </h2>
-<p>of course, the functionality required for full D support would include things like garbage collection and threading, which would likely either be extremely tedious or not feasible to support on these bare metal devices. all of this is normally provided by the D runtime library, which we are replacing with a stripped down minimal one. luckily, D <a href=https://dlang.org/blog/2017/08/23/d-as-a-better-c/>provides</a> a mode called <a href=https://dlang.org/spec/betterc.html>betterc</a>.</p>
-<p>with betterc mode, we <a href=https://dlang.org/spec/betterc.html#consequences>lose access</a> to some language features, most notably:</p>
+<div id=outline-container-intro class=outline-2>
+<h2 id=intro>
+intro
+</h2>
+<div id=outline-text-intro class=outline-text-2>
+<p><a href=https://dlang.org/>D</a> is an <a href=https://tour.dlang.org/>excellent
+language</a> and we wanted it ported to GBA.</p>
+<div id=outline-container-why-port-d class=outline-3>
+<h3 id=why-port-d>
+why port D?
+</h3>
+<div id=outline-text-why-port-d class=outline-text-3>
+<p>initially, when we began developing for the GBA, we used
+<a href=https://devkitpro.org/wiki/Getting_Started>devkitarm</a> as a build
+toolchain, and the
+<a href=https://github.com/redthing1/duster/blob/ee741183d9a19e3759a1cc11427d01751a13e2d3/src/DusterGBA/Makefile>makefiles</a>
+I created for <a href=https://github.com/redthing1/dusk>dusk</a>, which in turn
+were based on tonc makefiles. this worked fine and all, but I really
+don't love C; it has simplicity going for it, but it's full of ugly
+syntax, extremely unsafe code, and hidden pitfalls.</p>
+<p>
+D, on the other hand, emphasizes compile time checking and sanity. on a
+system like the GBA, your code is running on bare metal, and there's
+really no runtime error checking of any kind. any undefined behavior you
+do will just get steamrolled over. good luck tracking down what caused a
+bizarre memory corruption bug. overall, using D would be a huge benefit
+in preventing entire classes of errors before they happen, just through
+virtue of strict and smart compile time checking available with D. C++
+has modules now? i don't care, I don't like C++.</p>
+</div>
+</div>
+<div id=outline-container-why-not-c class=outline-3>
+<h3 id=why-not-c>
+why not C++?
+</h3>
+<div id=outline-text-why-not-c class=outline-text-3>
+<p>C++ is an unbelievably convoluted mess of legacy features and tacked on
+modern features. unfortunately because they are committed to backwards
+compatibility, their new features are added with bizarre syntactic
+conventions. also, <code class=verbatim>std::me::donot_care_for_the_naming_convention</code>,
+terrible template syntax, and slow compile times. i also hate header
+files and redefinition and forward declarations, and much prefer
+modules.</p>
+</div>
+</div>
+<div id=outline-container-an-assessment-of-the-problem class=outline-3>
+<h3 id=an-assessment-of-the-problem>
+an assessment of the problem
+</h3>
+<div id=outline-text-an-assessment-of-the-problem class=outline-text-3>
+<p>so now I had a good reason and a need to port D to GBA. but doing this
+blind could prove pretty hard! who knows what needs to be done to get D
+to run on GBA? on this front, thankfully there was a
+<a href=https://github.com/redthing1/3ds-hello-dlang>project that ported d to
+3ds with devkitarm</a>. if that worked, it was quite likely I could whip
+up something working for the GBA!</p>
+</div>
+</div>
+</div>
+</div>
+<div id=outline-container-the-process class=outline-2>
+<h2 id=the-process>
+the process
+</h2>
+<div id=outline-text-the-process class=outline-text-2>
+<div id=outline-container-starting-from-what-works class=outline-3>
+<h3 id=starting-from-what-works>
+starting from what works
+</h3>
+<div id=outline-text-starting-from-what-works class=outline-text-3>
+<p>of course, i used the obvious starting point: copy pasting from the D on
+3ds project!</p>
+<p>
+it looks like that project worked by using
+<a href=https://github.com/ldc-developers/ldc>LDC</a>, the LLVM compiler for D
+to generate executable arm7tdmi code. and then using the devkitarm tools
+to link and package the rom. as for providing basic minimal runtime D
+functionality, it utilized a <em>very</em> minimal replacement runtime library.</p>
+<p>
+so i took that
+<a href=https://github.com/redthing1/duster/commit/2d49dd97d5b1c60bfc1c114f55b416b94708ab17>minimal
+runtime library</a> and added some code that defined conditional
+compilation for the GBA, for the most part just copying what had been
+put in for the 3ds.</p>
+</div>
+</div>
+<div id=outline-container-forced-to-use-betterc class=outline-3>
+<h3 id=forced-to-use-betterc>
+forced to use betterc
+</h3>
+<div id=outline-text-forced-to-use-betterc class=outline-text-3>
+<p>of course, the functionality required for full D support would include
+things like garbage collection and threading, which would likely either
+be extremely tedious or not feasible to support on these bare metal
+devices. all of this is normally provided by the D runtime library,
+which we are replacing with a stripped down minimal one. luckily, D
+<a href=https://dlang.org/blog/2017/08/23/d-as-a-better-c/>provides</a> a mode
+called <a href=https://dlang.org/spec/betterc.html>betterc</a>.</p>
+<p>
+with betterc mode, we
+<a href=https://dlang.org/spec/betterc.html#consequences>lose access</a> to
+some language features, most notably: - garbage collection - runtime
+reflection and type metadata - classes - threading - dynamic arrays -
+static module constructors/destructors</p>
+<p>
+despite that, we get to keep everything else that's cool about D, which
+still makes it a large win over C or C++.</p>
+</div>
+</div>
+<div id=outline-container-compiling-d-code class=outline-3>
+<h3 id=compiling-d-code>
+compiling D code
+</h3>
+<div id=outline-text-compiling-d-code class=outline-text-3>
+<p>updating the makefile to compile object files from D source was
+<a href=https://github.com/redthing1/duster/commit/bfb0c1c0ea0157351edf6551729dcfe2c4bfaaf9>surprisingly
+simple</a>. i did find a
+<a href=https://github.com/redthing1/duster/commit/dd463933e78dce0d3b2b90584ee12a4a9aec7fd1>pitfall</a>
+where I had to explicitly specify strict memory alignment, because the
+GBA force-aligns misaligned memory accesses.</p>
+<p>
+i also ported all of dusk from C to D manually, and left some parts of
+the contrib C files, like gbfs and gbamap as C. D has great support for
+linking to C object files, so that doesn't present us any issues as long
+as we're specifying <code class=verbatim>extern (C)</code>.</p>
+</div>
+</div>
+<div id=outline-container-porting-tonc class=outline-3>
+<h3 id=porting-tonc>
+porting tonc
+</h3>
+<div id=outline-text-porting-tonc class=outline-text-3>
+<p>porting tonc headers to D was
+<a href=https://github.com/redthing1/duster/commits/3f13ad5fe4e0affe06284da7145da99a2dd4b608/src/libd/tonc>fairly
+straightforward</a>. nothing out of the ordinary really. i just used
+<a href=https://github.com/jacob-carlborg/dstep>dstep</a> to automate 90% of
+the conversion, then did a little manual fixing. i also had to add back
+in inline functions, as you can't link to tonc functions that are
+inline.</p>
+<p>
+at this point, our <code class=verbatim>libd</code> tonc is pretty much a drop in replacement for
+C tonc. note that it's just headers; we still link against the very same
+libtonc binary! so there's no need to install anything new, our support
+for D compilation is solely within our own source tree!</p>
+</div>
+</div>
+<div id=outline-container-creating-a-minimal-d-library class=outline-3>
+<h3 id=creating-a-minimal-d-library>
+creating a minimal D library
+</h3>
+<div id=outline-text-creating-a-minimal-d-library class=outline-text-3>
+<p>at this point, we were ready to separate our D library into its own
+thing. i
+<a href=https://github.com/redthing1/gba_dlang/commit/51b5787f77cbd9843e1dfd60a1af932cdbfc3e83>moved</a>
+everything into <a href=https://github.com/redthing1/gba_dlang>gba_dlang</a>.
+this way, using my ported D support for the GBA was as simple as adding
+a submodule and updating your makefile. also, this new project comes
+complete with a
+<a href=https://github.com/redthing1/gba_dlang/tree/main/demo>working
+example</a>. additionally,
+<a href=https://github.com/redthing1/gba_dlang/tree/main/libd>libd</a> contains
+our D standard library for GBA, known simply as <code class=verbatim>libd</code>!</p>
+</div>
+</div>
+</div>
+</div>
+<div id=outline-container-how-it-all-works class=outline-2>
+<h2 id=how-it-all-works>
+how it all works
+</h2>
+<div id=outline-text-how-it-all-works class=outline-text-2>
+<p>i want to quickly give an overview of how the whole thing functions. the
+main purpose of this is to serve as a point for future reference.
+porting D to any other weird system? this overview might be the
+framework to follow.</p>
+<div id=outline-container-distilled-summary class=outline-3>
+<h3 id=distilled-summary>
+distilled summary
+</h3>
+<div id=outline-text-distilled-summary class=outline-text-3>
 <ul>
-<li>garbage collection</li>
-<li>runtime reflection and type metadata</li>
-<li>classes</li>
-<li>threading</li>
-<li>dynamic arrays</li>
-<li>static module constructors/destructors</li>
+<li><code class=verbatim>ldc</code> used to compile D sources to <code class=verbatim>.o</code> files.</li>
+<li><code class=verbatim>libd</code> provides a minimal D standard library that is added to default
+include path, to provide core functionality and access to the C
+standard library via <code class=verbatim>core.stdc.*</code> modules.</li>
+<li><code class=verbatim>.elf</code> is created from linking D and C compiled object files with
+devkitarm linker <code class=verbatim>gcc</code>, which is the standard C linker.</li>
+<li><code class=verbatim>.GBA</code> is created as usual with devkitarm toolchain.</li>
 </ul>
-<p>despite that, we get to keep everything else that&rsquo;s cool about D, which still makes it a large win over C or C++.</p>
-<h2 id=compiling-d-code>compiling D code<a href=#compiling-d-code class=hanchor arialabel=Anchor>&#8983;</a> </h2>
-<p>updating the makefile to compile object files from D source was <a href=https://github.com/redthing1/duster/commit/bfb0c1c0ea0157351edf6551729dcfe2c4bfaaf9>surprisingly simple</a>. i did find a <a href=https://github.com/redthing1/duster/commit/dd463933e78dce0d3b2b90584ee12a4a9aec7fd1>pitfall</a> where I had to explicitly specify strict memory alignment, because the GBA force-aligns misaligned memory accesses.</p>
-<p>i also ported all of dusk from C to D manually, and left some parts of the contrib C files, like gbfs and gbamap as C. D has great support for linking to C object files, so that doesn&rsquo;t present us any issues as long as we&rsquo;re specifying <code>extern (C)</code>.</p>
-<h2 id=porting-tonc>porting tonc<a href=#porting-tonc class=hanchor arialabel=Anchor>&#8983;</a> </h2>
-<p>porting tonc headers to D was <a href=https://github.com/redthing1/duster/commits/3f13ad5fe4e0affe06284da7145da99a2dd4b608/src/libd/tonc>fairly straightforward</a>. nothing out of the ordinary really. i just used <a href=https://github.com/jacob-carlborg/dstep>dstep</a> to automate 90% of the conversion, then did a little manual fixing. i also had to add back in inline functions, as you can&rsquo;t link to tonc functions that are inline.</p>
-<p>at this point, our <code>libd</code> tonc is pretty much a drop in replacement for C tonc. note that it&rsquo;s just headers; we still link against the very same libtonc binary! so there&rsquo;s no need to install anything new, our support for D compilation is solely within our own source tree!</p>
-<h2 id=creating-a-minimal-d-library>creating a minimal D library<a href=#creating-a-minimal-d-library class=hanchor arialabel=Anchor>&#8983;</a> </h2>
-<p>at this point, we were ready to separate our D library into its own thing. i <a href=https://github.com/redthing1/gba_dlang/commit/51b5787f77cbd9843e1dfd60a1af932cdbfc3e83>moved</a> everything into <a href=https://github.com/redthing1/gba_dlang>gba_dlang</a>. this way, using my ported D support for the GBA was as simple as adding a submodule and updating your makefile. also, this new project comes complete with a <a href=https://github.com/redthing1/gba_dlang/tree/main/demo>working example</a>. additionally, <a href=https://github.com/redthing1/gba_dlang/tree/main/libd>libd</a> contains our D standard library for GBA, known simply as <code>libd</code>!</p>
-<h1 id=how-it-all-works>how it all works<a href=#how-it-all-works class=hanchor arialabel=Anchor>&#8983;</a> </h1>
-<p>i want to quickly give an overview of how the whole thing functions. the main purpose of this is to serve as a point for future reference. porting D to any other weird system? this overview might be the framework to follow.</p>
-<h2 id=distilled-summary>distilled summary<a href=#distilled-summary class=hanchor arialabel=Anchor>&#8983;</a> </h2>
-<ul>
-<li><code>ldc</code> used to compile D sources to <code>.o</code> files.</li>
-<li><code>libd</code> provides a minimal D standard library that is added to default include path, to provide core functionality and access to the C standard library via <code>core.stdc.*</code> modules.</li>
-<li><code>.elf</code> is created from linking D and C compiled object files with devkitarm linker <code>gcc</code>, which is the standard C linker.</li>
-<li><code>.GBA</code> is created as usual with devkitarm toolchain.</li>
-</ul>
-<p>all of this can be <a href=https://github.com/redthing1/gba_dlang/blob/main/demo/Makefile>concretely seen</a> in the demo makefile.</p>
-<h1 id=conclusion>conclusion<a href=#conclusion class=hanchor arialabel=Anchor>&#8983;</a> </h1>
+<p>all of this can be
+<a href=https://github.com/redthing1/gba_dlang/blob/main/demo/Makefile>concretely
+seen</a> in the demo makefile.</p>
+</div>
+</div>
+</div>
+</div>
+<div id=outline-container-conclusion class=outline-2>
+<h2 id=conclusion>
+conclusion
+</h2>
+<div id=outline-text-conclusion class=outline-text-2>
 <p>we now have ability to program in D for GBA!</p>
-<p>of course, one of my projects i embarked on right after getting gba_dlang to a functioning state was porting the entire duster codebase from C to D. today, <a href=https://github.com/redthing1/duster>duster</a> is written entirely in D, save for a couple files.</p>
-<p>with this work, anyone can now program in D for the GBA! need a starting point? a good way is to just clone duster and strip it down to the bare minimum, then build your own project using that skeleton. that should provide a fully functioning project for your own GBA project in dlang.</p>
+<p>
+of course, one of my projects i embarked on right after getting
+gba_dlang to a functioning state was porting the entire duster codebase
+from C to D. today, <a href=https://github.com/redthing1/duster>duster</a> is
+written entirely in D, save for a couple files.</p>
+<p>
+with this work, anyone can now program in D for the GBA! need a starting
+point? a good way is to just clone duster and strip it down to the bare
+minimum, then build your own project using that skeleton. that should
+provide a fully functioning project for your own GBA project in dlang.</p>
+</div>
+</div>
 </div></div>
 <div class=pagination>
 <div class=pagination__title>
