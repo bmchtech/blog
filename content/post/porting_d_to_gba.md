@@ -1,7 +1,8 @@
 +++
-title = "Porting D to the GBA"
+title = "porting D to the gba"
 date = "2022-02-08"
 author = "redthing1"
+toc = true
 +++
 
 # intro
@@ -10,9 +11,9 @@ author = "redthing1"
 
 ## why port D?
 
-initially, when we began developing for the gba, we used [devkitarm](https://devkitpro.org/wiki/Getting_Started) as a build toolchain, and the [makefiles](https://github.com/redthing1/duster/blob/ee741183d9a19e3759a1cc11427d01751a13e2d3/src/DusterGBA/Makefile) I created for [dusk](https://github.com/redthing1/dusk), which in turn were based on tonc makefiles. this worked fine and all, but I really don't love C; it has simplicity going for it, but it's full of ugly syntax, extremely unsafe code, and hidden pitfalls.
+initially, when we began developing for the GBA, we used [devkitarm](https://devkitpro.org/wiki/Getting_Started) as a build toolchain, and the [makefiles](https://github.com/redthing1/duster/blob/ee741183d9a19e3759a1cc11427d01751a13e2d3/src/DusterGBA/Makefile) I created for [dusk](https://github.com/redthing1/dusk), which in turn were based on tonc makefiles. this worked fine and all, but I really don't love C; it has simplicity going for it, but it's full of ugly syntax, extremely unsafe code, and hidden pitfalls.
 
-D, on the other hand, emphasizes compile time checking and sanity. on a system like the gba, your code is running on bare metal, and there's really no runtime error checking of any kind. any undefined behavior you do will just get steamrolled over. good luck tracking down what caused a bizarre memory corruption bug. overall, using D would be a huge benefit in preventing entire classes of errors before they happen, just through virtue of strict and smart compile time checking available with D. C++ has modules now? i don't care, I don't like C++.
+D, on the other hand, emphasizes compile time checking and sanity. on a system like the GBA, your code is running on bare metal, and there's really no runtime error checking of any kind. any undefined behavior you do will just get steamrolled over. good luck tracking down what caused a bizarre memory corruption bug. overall, using D would be a huge benefit in preventing entire classes of errors before they happen, just through virtue of strict and smart compile time checking available with D. C++ has modules now? i don't care, I don't like C++.
 
 ## why not C++?
 
@@ -20,7 +21,7 @@ C++ is an unbelievably convoluted mess of legacy features and tacked on modern f
 
 ## an assessment of the problem
 
-so now I had a good reason and a need to port D to gba. but doing this blind could prove pretty hard! who knows what needs to be done to get D to run on gba? on this front, thankfully there was a [project that ported d to 3ds with devkitarm](https://github.com/redthing1/3ds-hello-dlang). if that worked, it was quite likely I could whip up something working for the gba!
+so now I had a good reason and a need to port D to GBA. but doing this blind could prove pretty hard! who knows what needs to be done to get D to run on GBA? on this front, thankfully there was a [project that ported d to 3ds with devkitarm](https://github.com/redthing1/3ds-hello-dlang). if that worked, it was quite likely I could whip up something working for the GBA!
 
 # the process
 
@@ -30,7 +31,7 @@ of course, i used the obvious starting point: copy pasting from the D on 3ds pro
 
 it looks like that project worked by using [LDC](https://github.com/ldc-developers/ldc), the LLVM compiler for D to generate executable arm7tdmi code. and then using the devkitarm tools to link and package the rom. as for providing basic minimal runtime D functionality, it utilized a *very* minimal replacement runtime library.
 
-so i took that [minimal runtime library](https://github.com/redthing1/duster/commit/2d49dd97d5b1c60bfc1c114f55b416b94708ab17) and added some code that defined conditional compilation for the gba, for the most part just copying what had been put in for the 3ds.
+so i took that [minimal runtime library](https://github.com/redthing1/duster/commit/2d49dd97d5b1c60bfc1c114f55b416b94708ab17) and added some code that defined conditional compilation for the GBA, for the most part just copying what had been put in for the 3ds.
 
 ## forced to use betterc
 
@@ -48,7 +49,7 @@ despite that, we get to keep everything else that's cool about D, which still ma
 
 ## compiling D code
 
-updating the makefile to compile object files from D source was [surprisingly simple](https://github.com/redthing1/duster/commit/bfb0c1c0ea0157351edf6551729dcfe2c4bfaaf9). i did find a [pitfall](https://github.com/redthing1/duster/commit/dd463933e78dce0d3b2b90584ee12a4a9aec7fd1) where I had to explicitly specify strict memory alignment, because the gba force-aligns misaligned memory accesses.
+updating the makefile to compile object files from D source was [surprisingly simple](https://github.com/redthing1/duster/commit/bfb0c1c0ea0157351edf6551729dcfe2c4bfaaf9). i did find a [pitfall](https://github.com/redthing1/duster/commit/dd463933e78dce0d3b2b90584ee12a4a9aec7fd1) where I had to explicitly specify strict memory alignment, because the GBA force-aligns misaligned memory accesses.
 
 i also ported all of dusk from C to D manually, and left some parts of the contrib C files, like gbfs and gbamap as C. D has great support for linking to C object files, so that doesn't present us any issues as long as we're specifying `extern (C)`.
 
@@ -60,7 +61,7 @@ at this point, our `libd` tonc is pretty much a drop in replacement for C tonc. 
 
 ## creating a minimal D library
 
-at this point, we were ready to separate our D library into its own thing. i [moved](https://github.com/redthing1/gba_dlang/commit/51b5787f77cbd9843e1dfd60a1af932cdbfc3e83) everything into [gba_dlang](https://github.com/redthing1/gba_dlang). this way, using my ported D support for the GBA was as simple as adding a submodule and updating your makefile. also, this new project comes complete with a [working example](https://github.com/redthing1/gba_dlang/tree/main/demo). additionally, [libd](https://github.com/redthing1/gba_dlang/tree/main/libd) contains our D standard library for gba, known simply as `libd`!
+at this point, we were ready to separate our D library into its own thing. i [moved](https://github.com/redthing1/gba_dlang/commit/51b5787f77cbd9843e1dfd60a1af932cdbfc3e83) everything into [gba_dlang](https://github.com/redthing1/gba_dlang). this way, using my ported D support for the GBA was as simple as adding a submodule and updating your makefile. also, this new project comes complete with a [working example](https://github.com/redthing1/gba_dlang/tree/main/demo). additionally, [libd](https://github.com/redthing1/gba_dlang/tree/main/libd) contains our D standard library for GBA, known simply as `libd`!
 
 # how it all works
 
@@ -71,7 +72,7 @@ i want to quickly give an overview of how the whole thing functions. the main pu
 - `ldc` used to compile D sources to `.o` files.
 - `libd` provides a minimal D standard library that is added to default include path, to provide core functionality and access to the C standard library via `core.stdc.*` modules.
 - `.elf` is created from linking D and C compiled object files with devkitarm linker `gcc`, which is the standard C linker.
-- `.gba` is created as usual with devkitarm toolchain.
+- `.GBA` is created as usual with devkitarm toolchain.
 
 all of this can be [concretely seen](https://github.com/redthing1/gba_dlang/blob/main/demo/Makefile) in the demo makefile.
 
@@ -81,4 +82,4 @@ we now have ability to program in D for GBA!
 
 of course, one of my projects i embarked on right after getting gba_dlang to a functioning state was porting the entire duster codebase from C to D. today, [duster](https://github.com/redthing1/duster) is written entirely in D, save for a couple files.
 
-with this work, anyone can now program in D for the gba! need a starting point? a good way is to just clone duster and strip it down to the bare minimum, then build your own project using that skeleton. that should provide a fully functioning project for your own gba project in dlang.
+with this work, anyone can now program in D for the GBA! need a starting point? a good way is to just clone duster and strip it down to the bare minimum, then build your own project using that skeleton. that should provide a fully functioning project for your own GBA project in dlang.
