@@ -1,9 +1,7 @@
 
 # blog
 
-blog runs on the [hugo](https://gohugo.io/) site generator.
-
-follow the instructions in the documentation to install `hugo`.
+bmch web
 
 ## dev
 
