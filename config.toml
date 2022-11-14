@@ -17,9 +17,9 @@ summaryLength = 20
 
 [languages]
   [languages.en]
-    title = "beanmachine blog"
+    title = "beanmachine tech."
     subtitle = "machine"
-    keywords = "development gba linux blog"
+    keywords = "development linux blog research emulation architecture systems"
     copyright = "© 2019-2022. CC BY-NC-SA 4.0"
     menuMore = "show more"
     readMore = "more"
