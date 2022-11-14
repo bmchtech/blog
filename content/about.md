@@ -1,7 +1,5 @@
 +++
 title = "about"
-date = "2022-01-24"
-author = "machine"
 +++
 
 ![logo](/logo.png)
