@@ -7,5 +7,4 @@ author = "machine"
 ![logo](/logo.png)
 # bean machine
 
-Duster was created by bean machine in 2021. We are a duo of undergraduate software engineers with a passion for systems programming.
-It was developed as a GameBoy Advance homebrew game, and is based on the dusk game framework.
+bean machine is a team of engineers with a deep interest in systems programming and computer architecture. we are independent developers and researchers. 
