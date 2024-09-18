@@ -1,4 +1,4 @@
-baseurl = "https://bmchtech.github.io"
+baseurl = "https://beanmachine.alt.icu/"
 languageCode = "en-us"
 theme = "terminal"
 paginate = 10
