@@ -1,4 +1,32 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>beanmachine tech.</title><link>https://beanmachine.alt.icu/</link><description>Recent content on beanmachine tech.</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><copyright>© 2019-2022. CC BY-NC-SA 4.0</copyright><lastBuildDate>Tue, 08 Feb 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://beanmachine.alt.icu/index.xml" rel="self" type="application/rss+xml"/><item><title>porting D to GBA</title><link>https://beanmachine.alt.icu/post/d_on_gba/</link><pubDate>Tue, 08 Feb 2022 00:00:00 +0000</pubDate><guid>https://beanmachine.alt.icu/post/d_on_gba/</guid><description>intro D is an excellent language and we wanted it ported to GBA.
-why port D? initially, when we began developing for the GBA, we used devkitarm as a build toolchain, and the makefiles I created for dusk, which in turn were based on tonc makefiles.</description></item><item><title>explaining GBA Real-Time Clock (RTC)</title><link>https://beanmachine.alt.icu/post/rtc/</link><pubDate>Fri, 04 Feb 2022 00:00:00 +0000</pubDate><guid>https://beanmachine.alt.icu/post/rtc/</guid><description>intro there&amp;rsquo;s not much documentation online about how the GBA RTC works, so this blog post will attempt to demystify that.</description></item><item><title>Showcase</title><link>https://beanmachine.alt.icu/showcase/</link><pubDate>Wed, 18 Jul 2018 00:00:00 +0000</pubDate><guid>https://beanmachine.alt.icu/showcase/</guid><description>Header 2 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec interdum metus. Aenean rutrum ligula sodales ex auctor, sed tempus dui mollis.</description></item><item><title/><link>https://beanmachine.alt.icu/contact/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://beanmachine.alt.icu/contact/</guid><description>contact bean machine public inquiries
-please start a discussion private inquiries
-contact redthing1: redthing1 (at) alt.icu</description></item><item><title>about</title><link>https://beanmachine.alt.icu/about/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://beanmachine.alt.icu/about/</guid><description>bean machine bean machine is a team of engineers with a deep interest in systems programming and computer architecture. we are independent developers and researchers.</description></item></channel></rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>beanmachine tech.</title><link>https://bmchtech.github.io/</link><description>Recent content on beanmachine tech.</description><generator>Hugo</generator><language>en</language><copyright>© 2019-2022. CC BY-NC-SA 4.0</copyright><lastBuildDate>Tue, 08 Feb 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://bmchtech.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>porting D to GBA</title><link>https://bmchtech.github.io/post/d_on_gba/</link><pubDate>Tue, 08 Feb 2022 00:00:00 +0000</pubDate><guid>https://bmchtech.github.io/post/d_on_gba/</guid><description>&lt;div id="outline-container-intro" class="outline-2">
+&lt;h2 id="intro">
+intro
+&lt;/h2>
+&lt;div id="outline-text-intro" class="outline-text-2">
+&lt;p>&lt;a href="https://dlang.org/">D&lt;/a> is an &lt;a href="https://tour.dlang.org/">excellent
+language&lt;/a> and we wanted it ported to GBA.&lt;/p>
+&lt;div id="outline-container-why-port-d" class="outline-3">
+&lt;h3 id="why-port-d">
+why port D?
+&lt;/h3>
+&lt;div id="outline-text-why-port-d" class="outline-text-3">
+&lt;p>initially, when we began developing for the GBA, we used
+&lt;a href="https://devkitpro.org/wiki/Getting_Started">devkitarm&lt;/a> as a build
+toolchain, and the
+&lt;a href="https://github.com/redthing1/duster/blob/ee741183d9a19e3759a1cc11427d01751a13e2d3/src/DusterGBA/Makefile">makefiles&lt;/a>
+I created for &lt;a href="https://github.com/redthing1/dusk">dusk&lt;/a>, which in turn
+were based on tonc makefiles. this worked fine and all, but I really
+don&amp;#39;t love C; it has simplicity going for it, but it&amp;#39;s full of ugly
+syntax, extremely unsafe code, and hidden pitfalls.&lt;/p></description></item><item><title>explaining GBA Real-Time Clock (RTC)</title><link>https://bmchtech.github.io/post/rtc/</link><pubDate>Fri, 04 Feb 2022 00:00:00 +0000</pubDate><guid>https://bmchtech.github.io/post/rtc/</guid><description>&lt;h2 id="intro">intro&lt;/h2>
+&lt;p>there&amp;rsquo;s not much documentation online about how the GBA RTC works, so this blog post will attempt to demystify that. to be honest, i still don&amp;rsquo;t fully know how the RTC works. i&amp;rsquo;ll try to explain what i &lt;em>do&lt;/em> know, but DISCLAIMER: what i say may not be 100% accurate. you should be able to successfully emulate a working RTC though using this blogpost.&lt;/p></description></item><item><title>Showcase</title><link>https://bmchtech.github.io/showcase/</link><pubDate>Wed, 18 Jul 2018 00:00:00 +0000</pubDate><guid>https://bmchtech.github.io/showcase/</guid><description>&lt;h2 id="header-2">Header 2&lt;/h2>
+&lt;p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec interdum metus. Aenean rutrum ligula sodales ex auctor, sed tempus dui mollis. Curabitur ipsum dui, aliquet nec commodo at, tristique eget ante. &lt;strong>Donec quis dolor nec nunc mollis interdum vel in purus&lt;/strong>. Sed vitae leo scelerisque, sollicitudin elit sed, congue ante. In augue nisl, vestibulum commodo est a, tristique porttitor est. Proin laoreet iaculis ornare. Nullam ut neque quam.&lt;/p></description></item><item><title/><link>https://bmchtech.github.io/contact/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://bmchtech.github.io/contact/</guid><description>&lt;h1 id="contact-bean-machine">contact bean machine&lt;/h1>
+&lt;p>public inquiries&lt;/p>
+&lt;ul>
+&lt;li>please &lt;a href="https://github.com/bmchtech/beanmachine_web/discussions">start a discussion&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;p>private inquiries&lt;/p>
+&lt;ul>
+&lt;li>contact &lt;code>redthing1&lt;/code>: &lt;code>redthing1&lt;/code> (at) &lt;code>alt.icu&lt;/code>&lt;/li>
+&lt;/ul></description></item><item><title>about</title><link>https://bmchtech.github.io/about/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://bmchtech.github.io/about/</guid><description>&lt;p>&lt;img alt="logo" src="https://bmchtech.github.io/logo.png">&lt;/p>
+&lt;h1 id="bean-machine">bean machine&lt;/h1>
+&lt;p>bean machine is a team of engineers with a deep interest in systems programming and computer architecture. we are independent developers and researchers.&lt;/p></description></item></channel></rss>
