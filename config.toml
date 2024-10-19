@@ -14,6 +14,7 @@ summaryLength = 20
   tocTitle = "contents"
   favicon = "favicon.ico"
   noDescription = true
+  math = true
 
 [languages]
   [languages.en]
@@ -42,3 +43,15 @@ summaryLength = 20
       #   identifier = "showcase"
       #   name = "Showcase"
       #   url = "/showcase"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.extensions]
+      [markup.goldmark.extensions.passthrough]
+        enable = true
+        [markup.goldmark.extensions.passthrough.delimiters]
+          block = [['\[', '\]'], ['$$', '$$']]
+          inline = [['\(', '\)']]
+
+[markup.goldmark.renderer]
+  unsafe = true
