@@ -1,7 +1,10 @@
++++ 
+title = "Investigating Multiplication on the Gameboy Advance"
+date = "2024-10-19" 
+author = "zayd" 
+tags = ["dev", "gba", "arm"]
++++
 
-
-
-# Investigating Multiplication on the Gameboy Advance
 The Gameboy Advance has a pretty neat CPU - the ARM7TDMI. And by neat, I mean a chaotic and
 sadistic bundle of questionable design decisions. Seriously, they decided that the program counter should
 be a _general purpose register_. Why??? Insert simile here. I'm not even joking, you can use the program
@@ -29,7 +32,7 @@ emulate at all. Software doesn't rely on it. And if software _did_ rely on it, t
 developers got what was coming to them. But the carry flag is a meme, and it's a really tough puzzle, and
 that was motivation enough for me to give it a go. Little did I know it'd take _3 years_ of on and off work.
 
-## Standard Algorithm
+# Standard Algorithm
 What's the simplest, most basic multiplication algorithm you can think of to multiply a <span style="color:#3a7dc9"> **multiplier**</span> with a <span style="color:#DC6A76"> **multiplicand**</span>? One really easy way is to
 leverage the distributive property of multiplication like so:
 
@@ -51,7 +54,7 @@ the <span style="color:#DC6A76"> **multiplicand**</span> left shifted by some fa
 an `N-bit` number, we need to produce `N` different addends, and add them all up to get the result.
 That's slow. We can do better.
 
-## Modified Booth's Algorithm
+# Modified Booth's Algorithm
 The main slowness of the Standard Algorithm is that it requires you to add a  _lot_ of numbers together.
 Modified Booth's algorithm is an improvement on the Standard Algorithm that cuts the number of addends in two. Let's start with the standard definition for multiplication, written as a summation. Note that `m[i]` is defined as the bit at index `i` of `m` when `0 <= i < n`.
 $$
@@ -149,7 +152,7 @@ struct BoothRecodingOutput booth_recode(u64 input, BoothChunk booth_chunk) {
 }
 ```
 
-## How to Add Stuff ✨ Efficiently ✨
+# How to Add Stuff ✨ Efficiently ✨
 Now that we have the addends, it's time to actually add them up to produce the result. However, using a
 conventional full adder, the ARM7TDMI is only fast enough to add two numbers per cycle. Which means,
 you gotta spend 16 cycles to add all 17 addends, which is uselessly slow. The reason full adders are so
@@ -193,7 +196,7 @@ The reason we multiply `carries` by two is because, if we think about how a full
 from bit `i` is added to bits `i + 1` of the addends. So, bit `i` of carries has double the "weight" of bit `i` of
 result. This is a **very** important detail that will come in handy later, so do make sure you understand
 this.
-## Parallelism
+# Parallelism
 Until now, we've mostly treated "generate the addends" and "add the addends" as two separate, entirely
 discrete steps of the algorithm. But, turns out, we can do both of these steps _at the same time_. We
 know we can only add 4 addends per cycle, so what if we generate 4 addends per cycle, and compress
@@ -208,7 +211,7 @@ ARM7TDMI employs to do multiply accumulate. (This is a moot point, because the C
 an extra cycle _anyway_).
 
 
-## Early Termination
+# Early Termination
 The ARM7TDMI does something really clever here. In our current model of the algorithm, there are 4
 cycles of CSA compression, where each cycle `i` processes bits `8 * i` to `8 * i + 7` of the <span style="color:#3a7dc9"> **multiplier**</span>.
 (explain this in previous section). The observation is that if the remaining upper bits of the <span style="color:#3a7dc9"> **multiplier**</span> are all
@@ -216,7 +219,7 @@ zeros, then, we can skip that cycle, since the addends produced will be all zero
 affect the values of the partial result + partial carry. We can do the same trick if the remaining upper bits
 are all ones (assuming we are performing a signed multiplication), as those also produce addends that
 are all zeros.
-## Putting it all together
+# Putting it all together
 
 Here's a rough diagram, provided by Steve Furber in his book, Arm System-On-Chip Architecture:
 
@@ -268,7 +271,7 @@ struct CSAOutput perform_csa_array(u64 partial_sum, u64 partial_carry,
 
 (Yes, this insanity is indeed done by the actual CPU.)
 
-## Fatal Contradiction
+# Fatal Contradiction
 So I lied to you all. There's a small, but very meaningful difference between the algorithm I described and
 the ARM7TDMI's algorithm. Let's consider the following multiplication:
 $$
@@ -317,7 +320,7 @@ I was kind of out of ideas. I was pretty much ready to give up - my current algo
 explaining the behavior of the CPU carry flag. And so I took a break, only looking at this problem every
 once in a while.
 
-## Descent into Madness
+# Descent into Madness
 Congrats for getting this far, now comes the tricky stuff. I require anyone who wants to continue reading to
 put on [this music](https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.youtube.com/watch?v=ntgaStqpmjQ&ved=2ahUKEwj03pfgvs2IAxWjJTQIHTp_EToQtwJ6BAgIEAI&usg=AOvVaw1qRD2jAXNcY-9YA6Uhb9Ig) in the background, as it most accurately models the trek into insanity we are about to endure.
 
@@ -333,7 +336,7 @@ It'd solve the issue. It'd get us the extra bit we needed, and make us match the
 
 But that's not all. Remember the carry flag from earlier? With this simple change, we go from matching hardware about 50% of the time (no better than randomly guessing) to matching hardware _**85%**_ of the time. This sudden increase was something no other theory was able to do, and made me really confident that I was on to something. However, this percentage only happens if we set the carry flag to bit `30` of the partial carry result, which seems super arbitrary. It turns out that bit of the partial carry result had a special meaning I did not realize at the time, and I would only find out that meaning much, much later.
 
-## Mathematical Black Magic
+# Mathematical Black Magic
 
 It feels like we are finally making some sort of progress, however my algorithm still failed to calculate the carry flag properly around 15% of the time, and failed way more than that on long / signed multiplies. It was around this time that I found two patents [link later] that almost _entirely_ explained the algorithm. No idea how these hadn't been found up until this point, but they were quite illuminating.
 
