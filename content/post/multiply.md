@@ -1,6 +1,6 @@
 +++ 
 title = "Investigating Multiplication on the Gameboy Advance"
-date = "2024-10-19" 
+date = "2024-10-22"
 author = "zayd" 
 tags = ["dev", "gba", "arm"]
 +++
