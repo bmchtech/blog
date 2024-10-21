@@ -5,6 +5,11 @@ bmch web
 
 ## dev
 
+grab submodules:
+```
+git submodule update --init --recursive
+```
+
 ```sh
 hugo serve
 ```
