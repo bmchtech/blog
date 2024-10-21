@@ -18,12 +18,14 @@ summaryLength = 20
 [languages]
   [languages.en]
     title = "beanmachine tech."
-    subtitle = "machine"
-    keywords = "development linux blog research emulation architecture systems"
-    copyright = "© 2019-2022. CC BY-NC-SA 4.0"
-    menuMore = "show more"
-    readMore = "more"
-    readOtherPosts = "other posts"
+    copyright = "© 2019-2024. CC BY-NC-SA 4.0"
+    
+    [languages.en.params]
+      subtitle = "machine"
+      keywords = "development linux blog research emulation architecture systems"
+      menuMore = "show more"
+      readMore = "more"
+      readOtherPosts = "other posts"
 
     [languages.en.params.logo]
       logoText = "beanmachine"
