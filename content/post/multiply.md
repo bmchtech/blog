@@ -12,10 +12,19 @@ counter as the output to, say, an XOR instruction. Or an AND instruction.
 
 Or a multiply instruction.
 
-The ARM7TDMI's multiplication instruction has a pretty interesting side effect. Here the manual says that
+The ARM7TDMI has six different multiply instructions. The type signatures are:
+- u32 = u32 x u32
+- u64 = u32 x u32
+- i64 = i32 x i32
+- u32 = u32 x u32 + u32
+- u64 = u32 x u32 + u64
+- i64 = i32 x i32 + i64
+
+Why are we talking about these instructions? Well the ARM7TDMI's multiplications instruction have a pretty interesting side effect. Here the manual says that
 after a multiplication instruction executes, the carry and overflow flags are `UNPREDICTABLE`.
 
 ![An image of the ARM7TDMI manual explaining that the carry and overflow flags are `UNPREDICTABLE` after a multiply instruction.](/manual.png)
+<small>A short description of carry and overflow flags after a multiplication instruction from the ARM7TDMI manual. <sup>[[1](#cite1)]</sup></small>
 
 As if anything else in this god forsaken CPU was predictable. What this means is that software cannot and
 should not rely on the value of the carry flag after multiplication executes. It can be set to anything. Any
@@ -32,6 +41,12 @@ emulate at all. Software doesn't rely on it. And if software _did_ rely on it, t
 developers got what was coming to them. But the carry flag is a meme, and it's a really tough puzzle, and
 that was motivation enough for me to give it a go. Little did I know it'd take _3 years_ of on and off work.
 
+<<<<<<< HEAD
+=======
+Now is probably the time to say that this blog post assumes a base level of knowledge - comfort in the C programming language and bitwise math is recommended. Also, if you ever have any questions, any at all, while reading this blog post, feel free to reach out to me [here](
+https://github.com/bmchtech/blog/discussions).
+
+>>>>>>> ab429a6 (fixes)
 # Standard Algorithm
 What's the simplest, most basic multiplication algorithm you can think of to multiply a <span style="color:#3a7dc9"> **multiplier**</span> with a <span style="color:#DC6A76"> **multiplicand**</span>? One really easy way is to
 leverage the distributive property of multiplication like so:
@@ -151,6 +166,7 @@ struct BoothRecodingOutput booth_recode(u64 input, BoothChunk booth_chunk) {
     }
 }
 ```
+For the curious, more information about Booth Recoding can be found in this resource. <sup>[[2](#cite2)]</sup>
 
 # How to Add Stuff ✨ Efficiently ✨
 Now that we have the addends, it's time to actually add them up to produce the result. However, using a
@@ -161,7 +177,7 @@ determined. Can we eliminate this issue?
 
 Introducing... *drum roll*... carry save adders (CSAs)! These are genius - instead of outputting a single `N-bit` result, CSAs output one `N-bit` result without carry propagation, and one `N-bit` list of carries computed from each bit. At first this seems kind of silly - are CSAs really adding two `N-bit` operands and
 producing two `N-bit` results? What's the point? The point is that you can actually fit in an extra operand,
-and turn three `N-bit` operands into two `N-bit` results. Like so:
+and turn three `N-bit` operands into two `N-bit` results. <sup>[[3](#cite3)]</sup> Like so:
 ```c
 struct CSAOutput {
     u64 output;
@@ -196,6 +212,12 @@ The reason we multiply `carries` by two is because, if we think about how a full
 from bit `i` is added to bits `i + 1` of the addends. So, bit `i` of carries has double the "weight" of bit `i` of
 result. This is a **very** important detail that will come in handy later, so do make sure you understand
 this.
+<<<<<<< HEAD
+=======
+
+Using CSAs, the ARM7TDMI can sum up the addends together much faster. <sup>[[4, p. 94](#cite4)]</sup>
+
+>>>>>>> ab429a6 (fixes)
 # Parallelism
 Until now, we've mostly treated "generate the addends" and "add the addends" as two separate, entirely
 discrete steps of the algorithm. But, turns out, we can do both of these steps _at the same time_. We
@@ -208,7 +230,7 @@ results back to the very top of the CSA array for the next cycle. We can initial
 CSA array with `0`s. Or, if we want to be clever, we can implement multiply accumulate by initializing one
 of those two inputs with the accumulate value, and get multiply accumulate for free. This trick is what the
 ARM7TDMI employs to do multiply accumulate. (This is a moot point, because the CPU is stupid and can only read two register values at a time per cycle. So, using an accumulate causes the CPU to take
-an extra cycle _anyway_).
+an extra cycle _anyway_). <sup>[[4, p.95](#cite4)]</sup>
 
 
 # Early Termination
@@ -218,16 +240,22 @@ cycles of CSA compression, where each cycle `i` processes bits `8 * i` to `8 * i
 zeros, then, we can skip that cycle, since the addends produced will be all zeros, which cannot possibly
 affect the values of the partial result + partial carry. We can do the same trick if the remaining upper bits
 are all ones (assuming we are performing a signed multiplication), as those also produce addends that
+<<<<<<< HEAD
 are all zeros.
+=======
+are all zeros. <sup>[[4, p.95](#cite4)]</sup>
+
+>>>>>>> ab429a6 (fixes)
 # Putting it all together
 
 Here's a rough diagram, provided by Steve Furber in his book, Arm System-On-Chip Architecture:
 
 ![An image of the high level overview of the multiplier's organization, provided by Steve Furber in his book, Arm System-On-Chip Architecture](/booth.png)
+<small> An image of the high level overview of the multiplier's organization, provided by Steve Furber in his book, Arm System-On-Chip Architecture. <sup>[[4, p.95](#cite4)]</sup> </small>
 
-Partial Sum / Partial Carry contain the results obtained by the CSAs, and are rotated right by 8 on each cycle. Rm is recoded using booth's algorithm to produce the addends for the CSA array.
+Partial Sum / Partial Carry contain the results obtained by the CSAs, and are rotated right by 8 on each cycle. Rm is recoded using booth's algorithm to produce the addends for the CSA array. <sup>[[4, p.95](#cite4)]</sup>
 
-Ok, but remember when I said (make sure I said this) that there will be an elegant way to handle booth's negation of the addends? The way the algorithm gets around this is kind of genius. Remember how the carry output of a CSA has to be left shifted by 1? Well, this left-shift creates a zero in the LSB of the carry output of the CSA, so why don't we just put the carry in that bit? Like so:
+Ok, but remember when I said (make sure I said this) that there will be an elegant way to handle booth's negation of the addends? The way the algorithm gets around this is kind of genius. Remember how the carry output of a CSA has to be left shifted by 1? Well, this left-shift creates a zero in the LSB of the carry output of the CSA, so why don't we just put the carry in that bit? <sup>[[5, p. 12](#cite5)]</sup> Like so:
 <a name="perform_csa_array"></a>
 
 ```c
@@ -330,7 +358,7 @@ So fast forward about a year, I'm out for a walk and I decide to give this probl
 
 I mean, it's kind of dumb, right? The entire issue is that the <span style="color:#3a7dc9"> **multiplier**</span> is _too big_. Left shifting it would only exacerbate this issue. Congrats, we went from being able to process 7 bits on the first cycle to 6.
 
-But pay attention to the **first addend** that would be produced. The corresponding **chunk** would either be `000` or `100`. Two options, both of which are really easy to compute. This is a **chunk** that would only exist on the first cycle of the algorithm. Coincidentally, if you refer to the diagram[have actual link or figure #] up above, you'll notice that, in the first cycle of the algorithm, we have an extra input in the CSA array that we initialized to zero. What if, instead, we initialize it to the addend produced by this mythical **chunk**?
+But pay attention to the **first addend** that would be produced. The corresponding **chunk** would either be `000` or `100`. Two options, both of which are really easy to compute. This is a **chunk** that would only exist on the first cycle of the algorithm. Coincidentally, if you refer to the diagram[have actual link or figure #] up above, you'll notice that, in the first cycle of the algorithm, we have an extra input in the CSA array that we initialized to zero. What if, instead, we initialize it to the addend produced by this mythical **chunk**? <sup>[[5, p. 14](#cite5)]</sup>
 
 It'd solve the issue. It'd get us the extra bit we needed, and make us match the ARM7TDMI's cycle counts completely.
 
@@ -338,14 +366,14 @@ But that's not all. Remember the carry flag from earlier? With this simple chang
 
 # Mathematical Black Magic
 
-It feels like we are finally making some sort of progress, however my algorithm still failed to calculate the carry flag properly around 15% of the time, and failed way more than that on long / signed multiplies. It was around this time that I found two patents [link later] that almost _entirely_ explained the algorithm. No idea how these hadn't been found up until this point, but they were quite illuminating.
+It feels like we are finally making some sort of progress, however my algorithm still failed to calculate the carry flag properly around 15% of the time, and failed way more than that on long / signed multiplies. It was around this time that I found two patents, that almost _entirely_ explained the algorithm. No idea how these hadn't been found up until this point, but they were quite illuminating. <sup>[[5](#cite5)],  [[6](#cite6)]</sup>
 
 After reading the patents, it turns out my implementation of the CSA array is slightly flawed (see [`perform_csa_array`](#perform_csa_array) above). In particular, that function uses CSAs with a width of _64_ bits. That's way too large and wastes space on the chip - the actual hardware gets away with only using _31_.
 
 Another difference is that my algorithm has no way yet of supporting long accumulate values. Sure, I can initialize the partial output with the accumulate value, but the partial output is only 32 bits wide. 
 
 
-Turns out, the patents describe a way to deal with both of these issues at once, using some mathematical trickery. This is the hardest part of the algorithm, so hang in there. (cite)
+Turns out, the patents describe a way to deal with both of these issues at once, using some mathematical trickery. Pretty much the entire rest of this section is derived from [5, pp. 14-17]. This is the hardest part of the algorithm, so hang in there.
 
 Roughly, on each CSA, we want to add three numbers together to produce two numbers. Let's give these five numbers some names. Define `S` to be a 33-bit value (even though the actual S is 32-bits, adding an extra bit allows us to handle both signed and unsigned multiplication) representing the previous CSA's sum, `C` to be a 33-bit value representing the previous CSA's carry, and `S'` and `C'` to be 33-bit values representing the resulting CSA sum / carry. Finally, define `X` to be a 34-bit value containing the current booths addend. Then we have:
 
@@ -449,7 +477,7 @@ Meaning   `C'[32] = !A[2i+35]`.
 
 
 
-And with that, we managed to go from using 64 bits of CSA, to only 33. Our final algorithm for the CSAs is as follows:
+And with that, we managed to go from using 64 bits of CSA, to only 33. [5 pp. 14-17] Our final algorithm for the CSAs is as follows:
 
 
 ```C
@@ -556,7 +584,7 @@ Since `partial_sum` and `partial_carry` are shift registers that get rotated wit
 
 Spoiler alert, the value of the carry flag after a multiply instruction comes from the carryout of this barrel shifter.
 
-So, what rotation values does the ARM7TDMI use? According to the patents, for an unsigned multiply, all (1 or 2) uses of the barrel shifter do:
+So, what rotation values does the ARM7TDMI use? According to one of the patents, for an unsigned multiply, all (1 or 2) uses of the barrel shifter do this. <sup>[[6, p. 9](#cite6)]</sup>
 
 | # Iterations | Type | Rotation | 
 | - | - | - |
@@ -565,7 +593,7 @@ So, what rotation values does the ARM7TDMI use? According to the patents, for an
 | 3 |ROR|6  |
 | 4 |ROR|30  |
 
-Signed multiplies differ from unsigned multiplies in their **second** barrel shift. The second one for signed multiplies looks like this:
+Signed multiplies differ from unsigned multiplies in their **second** barrel shift. The second one for signed multiplies looks like this. <sup>[[6, p. 9](#cite6)]</sup>
 
 | # Iterations | Type | Rotation | 
 | - | - | - |
@@ -576,7 +604,7 @@ Signed multiplies differ from unsigned multiplies in their **second** barrel shi
 
 I'm not going to lie, I couldn't make sense of these rotation values. At all. Maybe they were wrong, since they patents already had a couple major errors at this point. No idea. Turns out it doesn't _really_ matter for calculating the carry flag of a multiply instruction. Observe the operation of the ARM7TDMI's `ROR` and `ASR`.
 
-Code from fleroviux's NanoBoyAdvance:
+Code from fleroviux's wonderful NanoBoyAdvance. <sup>[[7]](#cite7)</sup>
 ```C++
 void ROR(u32& operand, u8 amount, int& carry, bool immediate) {
   // Note that in booth's algorithm, the immediate argument will be true, and
@@ -705,3 +733,26 @@ if (is_long(flavor)) {
 ```
 
 Anyway, that's basically it. If you're interested in the full code, take a look [here](https://github.com/zaydlang/multiplication-algorithm/tree/master).
+
+# Works Cited
+
+<a name="cite1"></a>
+[1] “Advanced RISC Machines ARM ARM 7TDMI Data Sheet,” 1995. Accessed: Oct. 21, 2024. [Online]. Available: https://www.dwedit.org/files/ARM7TDMI.pdf
+
+<a name="cite2"></a>
+[2] “ASIC Design for Signal Processing,” Geoffknagge.com, 2024. https://www.geoffknagge.com/fyp/booth.shtml
+
+<a name="cite3"></a>
+[3] Wikipedia Contributors, “Carry-save adder,” Wikipedia, Sep. 17, 2024. https://en.wikipedia.org/wiki/Carry-save_adder
+
+<a name="cite4"></a>
+[4] Furber, Arm System-On-Chip Architecture, 2/E. Pearson Education India, 2001.
+
+<a name="cite5"></a>
+[5] D. J. Seal, G. Larri, and D. V. Jaggar, “Data Processing Using Multiply-accumulate Instructions,” Jul. 14, 1994
+
+<a name="cite6"></a>
+[6] G. Larri, “Data Processing Method And Apparatus Including Iterative Multiplier,” Mar. 11, 1994
+
+<a name="cite7"></a>
+[7] fleroviux. "NanoBoyAdvance." GitHub. Available: https://github.com/nba-emu/NanoBoyAdvance.
