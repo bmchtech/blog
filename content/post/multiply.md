@@ -220,7 +220,7 @@ Using CSAs, the ARM7TDMI can sum up the addends together much faster. <sup>[[4, 
 Until now, we've mostly treated "generate the addends" and "add the addends" as two separate, entirely
 discrete steps of the algorithm. Can we do them at the same time? Turns out, yes! We can generate some number of addends per cycle, and add them together using CSAs in the same cycle. We repeat this process until we've added up all our addends, and then we can send the results from the CSA to the ALU to be added together.
 
-This is what the ARM7TDMI does - it generates 4 addends per cycle, and compresses
+This is what the ARM7TDMI does - it generates four addends per cycle, and compresses
 them using four CSAs to generates only two addends.
 
 <center>
@@ -230,7 +230,7 @@ them using four CSAs to generates only two addends.
 </center>
 
  Each cycle, we read 8 bits from the <span style="color:#3a7dc9"> **multiplier**</span>, and with it, we generate 4 addends. We then
-feed them into 4 of the 6 outputs of this CSA array, and when we have our 2 results, feed those
+feed them into 4 of the 6 inputs of this CSA array, and when we have our 2 results, feed those
 2 results back to the very top of the CSA array for the next cycle. On the first cycle of the algorithm, we can initialize those 2 inputs to the
 CSA array with `0`s. 
 
@@ -389,7 +389,7 @@ We have a few remaining issues with our implementation of `perform_csa_array`, l
 
 ## Handling 64-bit Accumulates
 
-First of all, we don't know how to handle 64-bit accumulates yet. We know how to handle 32-bit accumulates - just [initialize the partial sum with the value of the accumulator](#trick). We can use a similar trick for 64-bit ones. First, we can initialize the partial sum with the bottom 33 bits of the 64 bit accumulate. Why 33? I thought the partial sum was 32 bits wide? Well, if we make the width of the partial sum 33 bits, we'd also be able to handle unsigned and signed multiplication by zero / sign extending appropriately. More on this in the next section.
+First of all, we don't know how to handle 64-bit accumulates yet. We know how to handle 32-bit accumulates - just [initialize the partial sum with the value of the accumulator](#trick). We can use a similar trick for 64-bit ones. First, we can initialize the partial sum with the bottom 33 bits of the 64 bit accumulate. Why 33? I thought the partial sum was 32 bits wide? Well, if we make the width of the partial sum 33 bits, we'd also be able to handle unsigned and signed multiplication by zero / sign extending appropriately. This way, our algorithm itself only needs to be able to perform signed multiplication, and our choice of zero-extension or sign-extension at initialization will handle the rest. More on this in the next section.
 
 We take the remaining 31 bits of the acc and drip-feed them, 2 bits per CSA, like so:
 
@@ -406,6 +406,8 @@ struct CSAOutput perform_csa_array(u64 partial_sum, u64 partial_carry,
     for (int i = 0; i < 4; i++) {
         // ... omitted
 
+        // result.output is guaranteed to have bits 31/32 = 0,
+        // so we can safely put whatever we want in them.
         result.output |= (acc_shift_register & 3) << 31;      
         acc_shift_register >>= 2;
     }
@@ -474,7 +476,12 @@ Now we add the magic tricks together:
 | `combined magic tricks` | 1, ..., 1 | 1 | 0 | 0 | 0 | CL[2i:0]
 
 
-And we've done it - we removed all the repeated instances of `C[32]` and `X[33]`, using some mathematical black magic. <sup>[[5 pp. 14-17](#cite5)]</sup> The result:
+And we've done it - we removed all the repeated instances of `C[32]` and `X[33]`, using some mathematical black magic. <sup>[[5 pp. 14-17](#cite5)]</sup> This means that all we need to do to handle sign extension is the following two operations:
+
+- `result.output |= (S[33] + !C[32] + !X[32]) << 31;`
+- `result.carry  |= (!S[34]) << 32;`
+
+The resulting code:
 
 <a name="perform_csa_array2"></a>
 
@@ -545,7 +552,7 @@ bool should_terminate(u64 multiplier, enum MultiplicationFlavor flavor) {
 }
 ```
 
-Note that <span style="color:#3a7dc9"> **multiplier**</span> is a signed 33-bit number. Now here's the main issue with early termination. After every cycle of booth's algorithm, a total of 41 bits of result are produced. To convince yourself of this, look at the final two lines of [`perform_csa_array`](#perform_csa_array2). The bottom eight bits contain the result of each CSA, and the upper 33 bits above those 8 contain `csa_output`. After every cycle of booth's algorithm, the bottom eight bits are fed into a result register, since the _next_ cycle of booth's algorithm cannot change the value of those bottom eight bits. The upper 33 bits become the next input into the next cycle of booth's algorithm. Something like this:
+Note that <span style="color:#3a7dc9"> **multiplier**</span> is a signed 33-bit number. After every cycle of booth's algorithm, the bottom eight bits are fed into a result register, since the _next_ cycle of booth's algorithm cannot change the value of those bottom eight bits. The remaining upper bits become the next input into the next cycle of booth's algorithm. Something like this:
 
 
 ```c
@@ -581,7 +588,7 @@ do {
     partial_sum = u128_ror(partial_sum, 8);
     partial_carry = u128_ror(partial_carry, 8);
 
-    // ASR = Arithmetic Shift Right for 33-bit numbers
+    // ASR == Arithmetic Shift Right for 33-bit numbers
     multiplier = asr_33(multiplier, 8);
 } while (!should_terminate(multiplier, flavor));
 
@@ -589,15 +596,15 @@ partial_sum.lo   |= csa_output.output;
 partial_carry.lo |= csa_output.carry;
 ```
 
-Since `partial_sum` and `partial_carry` are shift registers that get rotated with each iteration of booths algorithm, we need to rotate them again after the algorithm ends in order to correct them to their proper values. Thankfully, the ARM7TDMI has something called a barrel shifter. The barrel shifter is a nifty piece of hardware that allows the CPU to perform an arbitrary shift/rotate before an ALU operation, all in one cycle. Since we plan to add `partial_sum` and `partial_carry` in the ALU, we may as well use the barrel shifter to rotate one of those two operands, with no additional cost. 
+Since `partial_sum` and `partial_carry` are shift registers that get rotated with each iteration of booths algorithm, we need to rotate them again after the algorithm ends in order to correct them to their proper values. Thankfully, the ARM7TDMI has something called a barrel shifter. The barrel shifter is a nifty piece of hardware that allows the CPU to perform an arbitrary shift/rotate before an ALU operation, all in one cycle. Since we plan to add `partial_sum` and `partial_carry` in the ALU, we may as well use the barrel shifter to rotate one of those two operands, with no additional cost. The other operand ends up requiring special hardware to rotate, since the barrel shifter only operates on one value per cycle. 
 
-For long (64-bit) multiplies, two right rotations (known on the CPU as RORs) occur, since the ALU can only add 32-bits at a time and so must be used twice. 
+For long (64-bit) multiplies, two right rotations (known on the CPU as RORs) occur, since the ALU can only add 32-bits at a time and so the ALU / barrel shifter must be used twice. 
 
 Spoiler alert, the value of the carry flag after a multiply instruction comes from the carryout of this barrel shifter.
 
 So, what rotation values does the ARM7TDMI use? According to one of the patents, for an unsigned multiply, all (1 for 32-bit multiplies or 2 for 64-bit ones) uses of the barrel shifter do this: <sup>[[6, p. 9](#cite6)]</sup>
 
-| # Iterations | Type | Rotation | 
+| # Iterations of Booths | Type | Rotation | 
 | - | - | - |
 | 1 |ROR|22 | 
 | 2 |ROR|14  |
@@ -606,14 +613,14 @@ So, what rotation values does the ARM7TDMI use? According to one of the patents,
 
 Signed multiplies differ from unsigned multiplies in their **second** barrel shift. The second one for signed multiplies uses Arithmetic Shift Rights (ASRs) and looks like this: <sup>[[6, p. 9](#cite6)]</sup>
 
-| # Iterations | Type | Rotation | 
+| # Iterations of Booths | Type | Rotation | 
 | - | - | - |
 | 1 |ASR|22 | 
 | 2 |ASR|14  |
 | 3 |ASR|6  |
 | 4 |ROR|30  |
 
-I'm not going to lie, I couldn't make sense of these rotation values. At all. Maybe they were wrong, since they patents already had a couple major errors at this point. No idea. Turns out it doesn't _really_ matter for calculating the carry flag of a multiply instruction. Why? Well, observe what hapens when the ARM7TDMI does a `ROR` or `ASR`:
+I'm not going to lie, I couldn't make sense of these rotation values. At all. Maybe they were wrong, since they patents already had a couple major errors at this point. No idea. Turns out it doesn't _really_ matter for calculating the carry flag of a multiply instruction. Why? Well, observe what happens when the ARM7TDMI does a `ROR` or `ASR`:
 
 Code from fleroviux's wonderful NanoBoyAdvance. <sup>[[7]](#cite7)</sup>
 ```C++
@@ -621,9 +628,9 @@ void ROR(u32& operand, u8 amount, int& carry, bool immediate) {
   // Note that in booth's algorithm, the immediate argument will be true, and
   // amount will be non-zero
 
-  // ROR #0 equals to RRX #1
   if (amount != 0 || !immediate) {
     if (amount == 0) return;
+    // We end up doing down this codepath
 
     amount %= 32;
     operand = (operand >> amount) | (operand << (32 - amount));
@@ -656,12 +663,13 @@ void ASR(u32& operand, u8 amount, int& carry, bool immediate) {
     return;
   }
 
+  // We end up doing down this codepath
   carry = (operand >> (amount - 1)) & 1;
   operand = (operand >> amount) | ((0xFFFFFFFF * msb) << (32 - amount));
 }
 ```
 
-Note that in both ROR and ASR the carry will always be set to the last bit of the `operand` to be shifted out. i.e., if I rotate a value by `n`, then the carry will always be bit `n - 1` of the `operand`, since that was the last bit to be rotated out. Same goes for ASR.
+Note that in both ROR and ASR the carry will always be set to the last bit of the `operand` to be shifted out. i.e., if I rotate a value by `n`, then the carry will always be bit `n - 1` of the `operand` before rotation, since that was the last bit to be rotated out. Same goes for ASR.
 
 So, _it doesn't matter_ if I don't use the same rotation values as the patents. Since, no matter the rotation value, as long as the output from _my_ barrel shifter is the same as the output from the _ARM7TDMI's_ barrel shifter, then the last bit to be shifted out must be the same, and therefore the carry flag must _also_ have been the same.
 
@@ -754,7 +762,7 @@ if (is_long(flavor)) {
 
 Anyway, that's basically it. What a meme. If you're interested in the full code, take a look [here](https://github.com/zaydlang/multiplication-algorithm/tree/master).
 
-# Works Cited
+# References
 
 <a name="cite1"></a>
 [1] “Advanced RISC Machines ARM ARM 7TDMI Data Sheet,” 1995. Accessed: Oct. 21, 2024. [Online]. Available: https://www.dwedit.org/files/ARM7TDMI.pdf
