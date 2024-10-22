@@ -8,9 +8,7 @@ tags = ["dev", "gba", "arm"]
 This blog post assumes a base level of knowledge - comfort in the C programming language and bitwise math is recommended. Also, if you ever have any questions, any at all, while reading this blog post, feel free to reach out to me [here](
 https://github.com/bmchtech/blog/discussions).
 
-The Gameboy Advance has a pretty neat CPU - the ARM7TDMI. And by neat, I mean a chaotic and
-sadistic bundle of questionable design decisions. Seriously, they decided that the program counter should
-be a _general purpose register_. Why??? That's like allowing a drunk driver to change their tires while going 30 over the speed limit near a school. I'm not even joking, you can use the program
+The Gameboy Advance has a pretty neat CPU - the ARM7TDMI. This CPU is quite complicated - it allows the program counter to be used a _general purpose register_, implying it can be used as the output to any data processing instruction. That's like allowing a drunk driver to change their tires while going 30 over the speed limit near a school. It's a unique feature that can lead to very funny instructions. For example, you can use the program
 counter as the output to, say, an XOR instruction. Or an AND instruction.
 
 Or a multiply instruction.
