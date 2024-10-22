@@ -776,3 +776,4 @@ Anyway, that's basically it. What a meme. If you're interested in the full code,
 
 <a name="cite7"></a>
 [7] fleroviux. "NanoBoyAdvance." GitHub. Available: https://github.com/nba-emu/NanoBoyAdvance.
+
