@@ -389,7 +389,9 @@ We have a few remaining issues with our implementation of `perform_csa_array`, l
 
 ## Handling 64-bit Accumulates
 
-First of all, we don't know how to handle 64-bit accumulates yet. We know how to handle 32-bit accumulates - just [initialize the partial sum with the value of the accumulator](#trick). We can use a similar trick for 64-bit ones. First, we can initialize the partial sum with the bottom 33 bits of the 64 bit accumulate. Why 33? I thought the partial sum was 32 bits wide? Well, if we make the width of the partial sum 33 bits, we'd also be able to handle unsigned and signed multiplication by zero / sign extending appropriately. This way, our algorithm itself only needs to be able to perform signed multiplication, and our choice of zero-extension or sign-extension at initialization will handle the rest. More on this in the next section.
+First of all, we don't know how to handle 64-bit accumulates yet. Thankfully, it was around this time where I found two patents <sup>[[5](#cite5)], [[6](#cite6)] </sup> that ended up being incredibly illuminating. 
+
+We know how to handle 32-bit accumulates - just [initialize the partial sum with the value of the accumulator](#trick). We can use a similar trick for 64-bit ones. First, we can initialize the partial sum with the bottom 33 bits of the 64 bit accumulate. Why 33? I thought the partial sum was 32 bits wide? Well, if we make the width of the partial sum 33 bits, we'd also be able to handle unsigned and signed multiplication by zero / sign extending appropriately. This way, our algorithm itself only needs to be able to perform signed multiplication, and our choice of zero-extension or sign-extension at initialization will handle the rest. More on this in the next section.
 
 We take the remaining 31 bits of the acc and drip-feed them, 2 bits per CSA, like so:
 
