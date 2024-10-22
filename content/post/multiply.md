@@ -16,21 +16,16 @@ counter as the output to, say, an XOR instruction. Or an AND instruction.
 Or a multiply instruction.
 
 <a name="instructions"></a>
-The ARM7TDMI has six different multiply instructions. They are:
-- u32 = u32 x u32
-- u64 = u32 x u32
-- i64 = i32 x i32
-- u32 = u32 x u32 + u32
-- u64 = u32 x u32 + u64
-- i64 = i32 x i32 + i64
+Multiplication on the ARM7TDMI has a few neat features. You can multiply two 32-bit operands together to produce a 64-bit result. You can also optionally choose to do a multiply-add and add a third 64-bit operand to the 64-bit result, within the same instruction. Additionally, you can choose to treat the two 32-bit as either signed or unsigned.
 
-Why are we talking about these instructions? Well the ARM7TDMI's multiplication instructions have a pretty interesting side effect. Here the manual says that
-after a multiplication instruction executes, the carry flag is `UNPREDICTABLE`.
+Why are we talking about the multiplication instruction? Well the ARM7TDMI's multiplication instructions have a pretty interesting side effect. Here the manual says that
+after a multiplication instruction executes, the carry flag is set to a "meaningless value".
 
 ![An image of the ARM7TDMI manual explaining that the carry and overflow flags are UNPREDICTABLE after a multiply instruction.](../../manual.png)
+
 <small>A short description of carry and overflow flags after a multiplication instruction from the ARM7TDMI manual. <sup>[[1](#cite1)]</sup></small>
 
-As if anything else in this god forsaken CPU was predictable. What this means is that software cannot and
+What this means is that software cannot and
 should not rely on the value of the carry flag after multiplication executes. It can be set to anything. Any
 value. 0, 1, a horse, whatever. This has been a source of memes in the emulator development community for a few years -
 people would frequently joke about how the implementation of the carry flag may as well be `cpu.flags.c =
@@ -223,15 +218,23 @@ Using CSAs, the ARM7TDMI can sum up the addends together much faster. <sup>[[4, 
 
 # Parallelism
 Until now, we've mostly treated "generate the addends" and "add the addends" as two separate, entirely
-discrete steps of the algorithm. But, turns out, we can do both of these steps _at the same time_. We
-know we can only add 4 addends per cycle, so what if we generate 4 addends per cycle, and compress
-them using four CSAs to generate only two addends? So, we pipe 4 CSAs into each other, allowing us to process 6 `N`-bit inputs into two `N + 8` bit outputs. The reason the outputs are of size `N + 8` can be derived from [the equation above](#finaleq) - each addend is shifted left by 2 more than the previous addend.
+discrete steps of the algorithm. Can we do them at the same time? Turns out, yes! We can generate some number of addends per cycle, and add them together using CSAs in the same cycle. We repeat this process until we've added up all our addends, and then we can send the results from the CSA to the ALU to be added together.
+
+This is what the ARM7TDMI does - it generates 4 addends per cycle, and compresses
+them using four CSAs to generates only two addends.
+
+<center>
+
+![An image of the ARM7TDMI manual explaining that the carry and overflow flags are UNPREDICTABLE after a multiply instruction.](../../diagram.png)
+
+</center>
 
  Each cycle, we read 8 bits from the <span style="color:#3a7dc9"> **multiplier**</span>, and with it, we generate 4 addends. We then
 feed them into 4 of the 6 outputs of this CSA array, and when we have our 2 results, feed those
 2 results back to the very top of the CSA array for the next cycle. On the first cycle of the algorithm, we can initialize those 2 inputs to the
 CSA array with `0`s. 
 
+<a name="trick"> </a>
 A clever trick can be done here. The ARM7TDMI [supports mutliply accumulates](#instructions), which perform multiplication and addition in one instruction. We can implement multiply accumulate by initializing one
 of those two inputs with the accumulate value, and get multiply accumulate without extra cycles. This trick is what the
 ARM7TDMI employs to do multiply accumulate. (This ends up being a moot point, because the CPU is stupid and can only read two register values at a time per cycle. So, using an accumulate causes the CPU to take
@@ -270,7 +273,7 @@ struct CSAOutput perform_csa_array(u64 partial_sum, u64 partial_carry,
         csa_output.carry  &= 0x1FFFFFFFFULL;
 
         struct CSAOutput result = perform_csa(csa_output.output, 
-            addends.m[i].recoded_output & 0x1FFFFFFFFULL, csa_output.carry);
+            addends.m[i].recoded_output & 0x3FFFFFFFFULL, csa_output.carry);
 
         // Inject the carry caused by booth recoding
         result.carry <<= 1;
@@ -382,123 +385,104 @@ But that's not all. Remember the carry flag from earlier? With this simple chang
 
 # Mathematical Black Magic
 
-It feels like we are finally making some sort of progress, however my algorithm still failed to calculate the carry flag properly around 15% of the time, and failed way more than that on 64-bit and signed multiplies. It was around this time that I found two patents, that almost _entirely_ explained the algorithm. No idea how these hadn't been found up until this point, but they were quite illuminating. <sup>[[5](#cite5)],  [[6](#cite6)]</sup>
+We have a few remaining issues with our implementation of `perform_csa_array`, let's discuss them one at a time.
 
-After reading the patents, it turns out my implementation of the CSA array is slightly flawed (see [`perform_csa_array`](#perform_csa_array) above). In particular, that function uses CSAs with a width of _64_ bits. That's way too large and wastes space on the chip - the actual hardware gets away with only using _31_.
+## Handling 64-bit Accumulates
 
-Another difference is that my algorithm has no way yet of supporting long accumulate values. Sure, I can initialize the partial output with the accumulate value, but the partial output is only 32 bits wide. 
+First of all, we don't know how to handle 64-bit accumulates yet. We know how to handle 32-bit accumulates - just [initialize the partial sum with the value of the accumulator](#trick). We can use a similar trick for 64-bit ones. First, we can initialize the partial sum with the bottom 33 bits of the 64 bit accumulate. Why 33? I thought the partial sum was 32 bits wide? Well, if we make the width of the partial sum 33 bits, we'd also be able to handle unsigned and signed multiplication by zero / sign extending appropriately. More on this in the next section.
+
+We take the remaining 31 bits of the acc and drip-feed them, 2 bits per CSA, like so:
+
+```c
+// Contains the current high 31 bits of the acc.
+// This is shifted by 2 after each CSA.
+u64 acc_shift_register = 0;
+
+struct CSAOutput perform_csa_array(u64 partial_sum, u64 partial_carry,
+                                   struct RecodedMultiplicands addends) {
+    struct CSAOutput csa_output = { partial_sum, partial_carry };
+    struct CSAOutput final_csa_output = { 0, 0 };
+
+    for (int i = 0; i < 4; i++) {
+        // ... omitted
+
+        result.output |= (acc_shift_register & 3) << 31;      
+        acc_shift_register >>= 2;
+    }
+
+    final_csa_output.output |= csa_output.output << 8;
+    final_csa_output.carry  |= csa_output.carry  << 8;
+
+    return final_csa_output;
+}
+```
+
+You can think of this trick conceptually as us initializing all 64-bits of `csa_output.output` to the acc, instead of just the bottom 32-bits. <sup>[[5 p. 14](#cite5)]</sup>
+
+## Handling Signed Multiplication
+
+Turns out this algorithm doesn't support signed multiplication yet either. To implement this, we need to take a closer look at the CSA.
+
+The CSA in its current form takes in 3 33-bit inputs, and outputs 2 33-bit outputs. One of these inputs, however, is actually supposed to be *34* bits (ha, lied to you all again). Specifically, `addends.m[i].recoded_output`. The recoded output is derived from a 32-bit <span style="color:#DC6A76"> **multiplicand**</span>, which, when [booth recoded](#finaleq), can be multiplied by at most `2`, giving it a size of 33 bits. However, because we can support both signed and unsigned multiplies, this value needs to be 34 bits - the extra bit, as mentioned earlier, allows us to choose to either zero-extend or sign-extend the number to handle both signed and unsigned multiplication elegantly.
+
+Let's take a look at the other two of the CSA's addends as well. `csa_output.carry`, a 33 bit number, also needs to be properly sign extended. However, `csa_output.output` does _not_ need to be sign extended, since `csa_output.output` is technically already a 65 bit number that was fully initialized with the acc.
+
+Let's summarize the bit widths so far:
+- `csa_output.output`: 65
+- `csa_output.carry`: 33 
+- `addends.m[i].recoded_output`: 34
+
+In order to implement signed multiplication, we need to sign-extend all 3 of these numbers to the full 65 bits. How can we do so? Well, `csa_output.output` is already 65 bits, so that one is done for us. What about the other two? For now, I will use the following shortened forms for readability:
+- `csa_output.output` will be referred to as `S`
+- `csa_output.carry` will be referred to as `C` 
+- `addends.m[i].recoded_output` will be referred to as `X`
 
 
-Turns out, the patents describe a way to deal with both of these issues at once, using some mathematical trickery. Pretty much the entire rest of this section is derived from one of the patents <sup>[[5, pp. 14-17](#cite5)]</sup>. This is the hardest part of the algorithm, so hang in there.
-
-Roughly, on each CSA, we want to add three numbers together to produce two numbers. Let's give these five numbers some names. Define `S` to be a 33-bit value representing the previous CSA's sum (even though the actual sum is 32-bits, adding an extra bit allows us to handle both signed and unsigned multiplication), `C` to be a 33-bit value representing the previous CSA's carry, and `S'` and `C'` to be 33-bit values representing the resulting CSA sum / carry. Finally, define `X` to be a 34-bit value containing the current addend. Then we have:
-
-$$
-S', C' = S + C + X
-$$
-
-This, mathematically speaking, can be represented as a 65-bit addition. The reason why is that `X` can be left-shifted by as little as 0, and as much as 32. 
-
-Now, if we define `i` to be a number from `[0 - 3]` representing the CSA's position in the CSA array, we can divide the 65 bit CSA addition region into five chunks:
-- Lower: A region of size `2i` that represents `final_csa_output`. This region is unaffected by future CSAs, since all future addends are multiplied by at least `2^(2*i)`.
-- TransL: The two bits of CSA `#i` that will become Lower bits in CSA `#(i + 1)`.
-- Active: The 31-bit region where, including TransL, the actual CSA will be performed. Active itself is 31-bits wide, but with TransL, this is 33-bits.
-- TransH: The two bits of CSA `#i` that will become Active bits in CSA `#(i + 1)`
-- High: Contains values that have not yet been put into the CSA.
-
-Define `A` to be a `65-bit` accumulate (even though the actual accumulate is 64-bits, adding an extra bit allows us to handle both signed and unsigned accumulates). Define `SL` and `CL` to be the analogue of `final_csa_output` in (see [`the code snippet above`](#perform_csa_array) above). Finally, define `XC` to be the carry flag produced by booth recoding. Then, we can model the addition of the 3 operands in the CSA as follows:
-
-| Region: | High  | TransH | Active | TransL | Lower |
+Here's a helpful visualization of these desired 65-bit numbers, after they've been sign extended:
+| addend | bits 65-35 | bit 34 | bit 33 | bit 32  | bits 31-0
 | -- | - | - | - | - | - |
-| Size: |  30 - 2i | 2 |  31 | 2 | 2i | 
-| Operand #1: | 0 | 0 | S[32:2] | S[1:0] | SL[2i:0] 
-| Operand #2: | C[32], ..., C[32] | C[32] C[32] | C[32:2] | C[1:0] | CL[2i:0]
-| Operand #3: | X[33], ..., X[33] | X[33] X[33] | X[32:2] | X[1:0] | 0
-| Result Sum: |  0 | S'[32:31] | S'[30:0] | SL[2i+2:2i] | SL[2i:0] 
-| Result Carry: |  C'[32], ..., C'[32]  | C'[32:31] | C'[30:0] | CL[2i+2], XC (aka CL[2i+1]) | CL[2i:0]
+| `csa_output.output` | S[65..35] | S[34] | S[33] | S[32] | S[31..0] | SL[2i:0] 
+| `csa_output.carry` | C[32], ..., C[32] | C[32] | C[32] | C[32] | C[31..0] | CL[2i:0]
+| `addends.m[i].recoded_output` | X[33], ..., X[33] | X[33] | X[33] | X[32] | X[31..0] | 0
 
-Seriously, take time to make sure you understand this table. It represents the CSA that we want to be able to perform.
+We can do a magic trick here. We can replace the `csa_output.carry` row with a row of ones, and `!C[32]`. Convince yourself that this is mathematically okay:
 
-Here's a simple way to implement long accumulates. 33 bits of the `A` will be placed in `S` as initialization. Meanwhile, we can shove the other `31` bits, two bits per CSA, into the high region of addend #1.
+| addend | bits 65-35 | bit 34  | bit 33 | bit 32  | bits 31-0
+| -- | - | - | - | - | - |
+| `csa_output.output` | S[65..35] | S[34] | S[33] | S[32] | S[31..0] | SL[2i:0] 
+| `csa_output.carry` | 0, ..., 0 | 0 | !C[32] | C[32] | C[31..0] | CL[2i:0]
+| `magic trick` | 1, ..., 1 | 1 | 1 | 0 | 0 | CL[2i:0]
+| `addends.m[i].recoded_output` | X[33], ..., X[33] | X[33] | X[33] | X[32] | X[31..0] | 0
 
-| Region: | High  | TransH | Active | TransL | Lower |
-| - | - | - | - | - | - |
-| Size: |  30 - 2i | 2 |  31 | 2 | 2i | 
-| Operand #1: |0 | A[2i+35 : 2i+34] | S[32:2] | S[1:0] | SL[2i:0] 
-| Operand #2: | C[32], ..., C[32] | C[32] C[32] | C[32:2] | C[1:0] | CL[2i:0]
-| Operand #3: | X[33], ..., X[33] | X[33] X[33] | X[32:2] | X[1:0] | 0
-| Result Sum: |  0 |S'[32:31] | S'[30:0] | SL[2i+2:2i] | SL[2i:0] 
-| Result Carry: | C'[32], ..., C'[32] | C'[32:31] | C'[30:0] | CL[2i+2], XC (aka CL[2i+1]) | CL[2i:0]
+Let's do it again, this time to `X`:
 
-We can ignore the Lower column, since the result there is always the same as the addends. We can also ignore the TransL and Active columns, as the operation in those two columns can be implemented using a simple 33-bit CSA (and we already have shown how to do so in [`perform_csa_array`](#perform_csa_array) above). This leaves:
+| addend | bits 65-35 | bit 34  | bit 33 | bit 32  | bits 31-0
+| -- | - | - | - | - |-|
+| `csa_output.output` | S[65..35] | S[34] | S[33] | S[32] | S[31..0] | SL[2i:0] 
+| `csa_output.carry` | 0, ..., 0 | 0 | !C[32] | C[32] | C[31..0] | CL[2i:0]
+| `magic trick` | 1, ..., 1 | 1 | 1 | 0 | 0 | CL[2i:0]
+| `addends.m[i].recoded_output` | 0, ..., 0 | 0 | !X[33] | X[32] | X[31..0] | 0
+| `another magic trick` | 1, ..., 1 | 1 | 1 | 0 | 0 | CL[2i:0]
 
-| Region: | High  | TransH 
-| - | - | - |
-| Size: |  30 - 2i | 2 
-| Operand #1: |0 | A[2i+35 : 2i+34] | S[32:2] | 
-| Operand #2: | C[32], ..., C[32] | C[32] C[32] | C[32:2] | C[1:0] | CL[2i:0]
-| Operand #3: | X[33], ..., X[33] | X[33] X[33] | X[32:2] | X[1:0] | 0
-| Result Sum: |  0 |S'[32:31] | S'[30:0] | SL[2i+2:2i] | SL[2i:0] 
-| Result Carry: | C'[32], ..., C'[32] | C'[32:31] | C'[30:0] | CL[2i+2], XC (aka CL[2i+1]) | CL[2i:0]
+Now we add the magic tricks together:
 
-We can do some trickery to replace Operand #2 with one row of all ones, and another row with just `!C[N]`. Convince yourself why this is mathematically OK.
-
-| Region: | High  | TransH 
-| - | - | - |
-| Size: |  30 - 2i | 2 
-| Operand #1: |0 | A[2i+35 : 2i+34] | S[32:2] | 
-| Operand #2: | 1, ..., 1 | 1 1 | C[32:2] | C[1:0] | CL[2i:0]
-| Operand #2.5: | 0 | 0 !C[32] | C[32:2] | C[1:0] | CL[2i:0]
-| Operand #3: | X[33], ..., X[33] | X[33] X[33] | X[32:2] | X[1:0] | 0
-| Result Sum: |  0 |S'[32:31] | S'[30:0] | SL[2i+2:2i] | SL[2i:0] 
-| Result Carry: | C'[32], ..., C'[32] | C'[32:31] | C'[30:0] | CL[2i+2], XC (aka CL[2i+1]) | CL[2i:0]
-
-Do the same to Operand #3:
-
-| Region: | High  | TransH 
-| - | - | - |
-| Size: |  30 - 2i | 2 
-| Operand #1: |0 | A[2i+35 : 2i+34] | S[32:2] | 
-| Operand #2: | 1, ..., 1 | 1 1 | C[32:2] | C[1:0] | CL[2i:0]
-| Operand #2.5: | 0 | 0 !C[32] | C[32:2] | C[1:0] | CL[2i:0]
-| Operand #3: | 1, ..., 1 | 1 1 | C[32:2] | C[1:0] | CL[2i:0]
-| Operand #3.5: | 0 | 0 !X[33] | C[32:2] | C[1:0] | CL[2i:0]
-| Result Sum: |  0 |S'[32:31] | S'[30:0] | SL[2i+2:2i] | SL[2i:0] 
-| Result Carry: | C'[32], ..., C'[32] | C'[32:31] | C'[30:0] | CL[2i+2], XC (aka CL[2i+1]) | CL[2i:0]
-
-Now, Operands #2 and #3 can be added together, being replaced by a new `Operand #4`.
-
-| Region: | High  | TransH 
-| - | - | - |
-| Size: |  30 - 2i | 2 
-| Operand #1: |0 | A[2i+35 : 2i+34] | S[32:2] | 
-| Operand #2.5: | 0 | 0 !C[32] | C[32:2] | C[1:0] | CL[2i:0]
-| Operand #3.5: | 0 | 0 !X[33] | C[32:2] | C[1:0] | CL[2i:0]
-| Operand #4: | 1, ..., 1 | 1 0 | C[32:2] | C[1:0] | CL[2i:0]
-| Result Sum: |  0 |S'[32:31] | S'[30:0] | SL[2i+2:2i] | SL[2i:0] 
-| Result Carry: | C'[32], ..., C'[32] | C'[32:31] | C'[30:0] | CL[2i+2], XC (aka CL[2i+1]) | CL[2i:0]
-
-Now we can define `S'` as:
-`S'[32:31] = A[2i + 34] + !C[32] + !X[33]`
-
-We can now remove `S'` and the bits used to calculate it. Let's see what's left.
-
-| Region: | High  | TransH 
-| - | - | - |
-| Size: |  30 - 2i | 2 
-| Operand #1: |0 | A[2i+35] 0 | S[32:2] | 
-| Operand #4: | 1, ..., 1 | 1 0 | C[32:2] | C[1:0] | CL[2i:0]
-| Result Carry: | C'[32], ..., C'[32] | C'[32:31] | C'[30:0] | CL[2i+2], XC (aka CL[2i+1]) | CL[2i:0]
-
-Meaning   `C'[32] = !A[2i+35]`.
+| addend | bits 65-35 | bit 34 | bit 33 | bit 32  | bits 31-0
+| -- | - | - | - | - | - |
+| `csa_output.output` | S[65..35] | S[34] | S[33] | S[32] | S[31..0] | SL[2i:0] 
+| `csa_output.carry` | 0, ..., 0 | 0 | !C[32] | C[32] | C[31..0] | CL[2i:0]
+| `addends.m[i].recoded_output` | 0, ..., 0 | 0 | !X[33] | X[32] | X[31..0] | 0
+| `combined magic tricks` | 1, ..., 1 | 1 | 0 | 0 | 0 | CL[2i:0]
 
 
-
-And with that, we managed to go from using 64 bits of CSA, to only 33. <sup>[[5 pp. 14-17](#cite5)]</sup> Our final algorithm for the CSAs is as follows:
-
+And we've done it - we removed all the repeated instances of `C[32]` and `X[33]`, using some mathematical black magic. <sup>[[5 pp. 14-17](#cite5)]</sup> The result:
 
 <a name="perform_csa_array2"></a>
+
 ```C
+// Contains the current high 31 bits of the acc. 
+// This is shifted by 2 after each CSA.
+u64 acc_shift_register = 0;
+
 struct CSAOutput perform_csa_array(u64 partial_sum, u64 partial_carry, 
                                    struct RecodedMultiplicands addends[4]) {
     struct CSAOutput csa_output = { partial_sum, partial_carry };
@@ -507,7 +491,7 @@ struct CSAOutput perform_csa_array(u64 partial_sum, u64 partial_carry,
     for (int i = 0; i < 4; i++) {
         csa_output.output &= 0x1FFFFFFFFULL;
         csa_output.carry  &= 0x1FFFFFFFFULL;
-
+    
         struct CSAOutput result = perform_csa(csa_output.output, 
             addends.m[i].recoded_output & 0x1FFFFFFFFULL, csa_output.carry);
 
@@ -528,9 +512,9 @@ struct CSAOutput perform_csa_array(u64 partial_sum, u64 partial_carry,
         result.output >>= 2;
         result.carry  >>= 2;
 
-        // Perform the magic described in the tables for the handling of TransH
-        // and High. acc_shift_register contains the upper 31 bits of the acc
-        // in its lower bits.
+        // Perform the magic described in the tables for the sign extension
+        // of csa_output.carry and the recoded addend. Remember that bits 0-1
+        // of the acc_shift_register is bits 33-34 of S.
         u64 magic = bit(acc_shift_register, 0) + 
             !bit(csa_output.carry, 32) + !bit(addends.m[i].recoded_output, 33);
         result.output |= magic << 31;
