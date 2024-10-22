@@ -1,5 +1,5 @@
 +++ 
-title = "Investigating Multiplication on the Gameboy Advance"
+title = "Solving the Mystery of ARM7TDMI Multiply Carry Flag"
 date = "2024-10-22"
 author = "zayd" 
 tags = ["dev", "gba", "arm"]
